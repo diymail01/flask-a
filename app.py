@@ -5,7 +5,6 @@ import datetime
 import sqlite3
 import pandas as pd
 from demo import generate_pdf_report
-from datetime import datetime
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -763,7 +762,7 @@ def generate_report():
                                      'threat_level': threat_level,
                                      'ip_address': ip_address
                                  },
-                                 generated_time=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                                 generated_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             )
     
     except Exception as e:

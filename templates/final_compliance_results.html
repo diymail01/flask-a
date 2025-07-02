@@ -5,43 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compliance Results - Security Compliance Automation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', 'Roboto', 'system-ui', Arial, sans-serif;
-            background: #f6f8fa;
-            color: #222;
+            font-family: 'Inter', 'Nunito', 'system-ui', Arial, sans-serif;
+            background: linear-gradient(135deg, #f6f8fa 0%, #e3e9f7 100%);
+            color: #23272f;
+            min-height: 100vh;
         }
         .navbar {
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.85) !important;
+            box-shadow: 0 4px 24px rgba(31,71,136,0.07);
             font-weight: 600;
+            border-bottom: 1px solid #e3e9f7;
         }
         .navbar-brand {
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             letter-spacing: 1px;
+            font-weight: 700;
+            color: #1f4788 !important;
         }
-        .card {
-            border-radius: 18px;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
-            border: none;
+        .nav-link.active, .nav-link:focus, .nav-link:hover {
+            color: #3a7bd5 !important;
+            border-bottom: 2px solid #3a7bd5;
+            background: rgba(58,123,213,0.07);
+            border-radius: 8px 8px 0 0;
         }
-        .card-header {
-            border-radius: 18px 18px 0 0;
-            background: #f3f6fa;
-            font-weight: 600;
-            font-size: 1.1rem;
+        .main-container {
+            max-width: 950px;
+            margin: 48px auto 0 auto;
+            padding: 0 12px 48px 12px;
+        }
+        .glass-card {
+            border-radius: 22px;
+            background: rgba(255,255,255,0.75);
+            box-shadow: 0 8px 32px rgba(31,71,136,0.10);
+            backdrop-filter: blur(6px);
+            border: 1px solid #e3e9f7;
+            margin-bottom: 2rem;
+            transition: box-shadow 0.2s;
+        }
+        .glass-card:hover {
+            box-shadow: 0 12px 36px rgba(31,71,136,0.16);
+        }
+        .glass-header {
+            border-radius: 22px 22px 0 0;
+            background: rgba(243,246,250,0.85);
+            font-weight: 700;
+            font-size: 1.15rem;
+            border-bottom: 1px solid #e3e9f7;
         }
         .table {
-            border-radius: 12px;
+            border-radius: 14px;
             overflow: hidden;
-            background: #fff;
+            background: rgba(255,255,255,0.92);
+            box-shadow: 0 2px 12px rgba(31,71,136,0.06);
         }
         .table thead {
-            background: #1f4788;
+            background: linear-gradient(90deg, #1f4788 60%, #3a7bd5 100%);
         }
         .table thead th {
             color: #fff;
-            font-weight: 600;
+            font-weight: 700;
             border: none;
         }
         .table-striped > tbody > tr:nth-of-type(odd) {
@@ -49,19 +75,43 @@
         }
         .table-hover tbody tr:hover {
             background-color: #e9f0fa;
+            transition: background 0.2s;
         }
         .btn {
             border-radius: 24px;
             font-weight: 600;
             letter-spacing: 0.5px;
             box-shadow: 0 1px 4px rgba(31,71,136,0.07);
+            transition: box-shadow 0.2s, background 0.2s;
         }
         .btn-primary {
             background: linear-gradient(90deg, #1f4788 60%, #3a7bd5 100%);
             border: none;
         }
-        .btn-info, .btn-success, .btn-secondary {
-            border: none;
+        .btn-primary:hover, .btn-primary:focus {
+            background: linear-gradient(90deg, #3a7bd5 60%, #1f4788 100%);
+            box-shadow: 0 2px 8px rgba(31,71,136,0.13);
+        }
+        .btn-fab {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 1000;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            font-size: 2rem;
+            background: linear-gradient(135deg, #3a7bd5 60%, #1f4788 100%);
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(31,71,136,0.18);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .btn-fab:hover {
+            background: linear-gradient(135deg, #1f4788 60%, #3a7bd5 100%);
+            box-shadow: 0 8px 32px rgba(31,71,136,0.22);
         }
         .status-yes { color: #198754; font-weight: bold; }
         .status-no { color: #dc3545; font-weight: bold; }
@@ -75,14 +125,26 @@
         .footer {
             margin-top: 48px;
             padding: 18px 0 8px 0;
-            background: #f3f6fa;
+            background: rgba(243,246,250,0.85);
             color: #888;
             text-align: center;
-            font-size: 0.98rem;
+            font-size: 1rem;
             border-radius: 18px 18px 0 0;
         }
+        .footer a { color: #3a7bd5; text-decoration: none; margin: 0 8px; }
+        .footer a:hover { text-decoration: underline; }
+        .tooltip-inner {
+            background: #23272f;
+            color: #fff;
+            font-size: 0.95rem;
+            border-radius: 8px;
+        }
+        @media (max-width: 900px) {
+            .main-container { max-width: 100%; }
+        }
         @media (max-width: 768px) {
-            .card, .table, .navbar, .footer { border-radius: 10px !important; }
+            .main-container { padding: 0 2px 48px 2px; }
+            .glass-card, .table, .navbar, .footer { border-radius: 10px !important; }
             .navbar-brand { font-size: 1.1rem; }
         }
     </style>
@@ -91,7 +153,7 @@
 <nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
   <div class="container-fluid">
     <a class="navbar-brand d-flex align-items-center" href="/">
-      <span style="font-size:1.5rem; margin-right:8px;">🔒</span> Security Compliance
+      <img src="https://cdn-icons-png.flaticon.com/512/3064/3064197.png" alt="Logo" width="36" height="36" class="me-2" style="border-radius:8px;"> Security Compliance
     </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
@@ -99,32 +161,31 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">Home</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/compliance">Compliance Check</a>
+          <a class="nav-link {% if '/compliance' in request.path %}active{% endif %}" href="/compliance">Compliance Check</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/dashboard">Dashboard</a>
+          <a class="nav-link {% if '/dashboard' in request.path %}active{% endif %}" href="/dashboard">Dashboard</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/reports">Reports</a>
+          <a class="nav-link {% if '/reports' in request.path %}active{% endif %}" href="/reports">Reports</a>
         </li>
       </ul>
     </div>
   </div>
 </nav>
-
-<div class="container mt-5 mb-5">
-    <h1 class="mb-4 fw-bold" style="letter-spacing:1px;">📊 Compliance Scan Results</h1>
+<div class="main-container">
+    <h1 class="mb-4 fw-bold text-center" style="letter-spacing:1px;">📊 Compliance Scan Results</h1>
     {% if saved_count > 0 %}
     <div class="alert alert-success shadow-sm">
         <h5>✅ Scan Completed Successfully!</h5>
         <p>{{ saved_count }} results have been saved to the database.</p>
     </div>
     {% endif %}
-    <div class="card mb-4">
-        <div class="card-header d-flex justify-content-between align-items-center">
+    <div class="glass-card mb-4">
+        <div class="glass-header d-flex justify-content-between align-items-center">
             <h5>📋 Scan Summary</h5>
             <a href="{{ url_for('download_report') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1" target="_blank">
                 <span>📥</span> Download as PDF
@@ -159,7 +220,7 @@
         {% set info_checks = results|selectattr('compliance_status', 'equalto', '-')|list %}
         {% set high_priority = results|selectattr('threat_level', 'equalto', 'High')|selectattr('compliance_status', 'equalto', 'No')|list %}
         <div class="col-md-2 col-6">
-            <div class="card text-center py-2">
+            <div class="glass-card text-center py-2">
                 <div class="card-body">
                     <h4 class="text-primary mb-0">{{ results|length }}</h4>
                     <small>Total Checks</small>
@@ -167,7 +228,7 @@
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card text-center py-2">
+            <div class="glass-card text-center py-2">
                 <div class="card-body">
                     <h4 class="text-success mb-0">{{ compliant|length }}</h4>
                     <small>Compliant</small>
@@ -175,7 +236,7 @@
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card text-center py-2">
+            <div class="glass-card text-center py-2">
                 <div class="card-body">
                     <h4 class="text-danger mb-0">{{ non_compliant|length }}</h4>
                     <small>Non-Compliant</small>
@@ -183,7 +244,7 @@
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card text-center py-2">
+            <div class="glass-card text-center py-2">
                 <div class="card-body">
                     <h4 class="text-warning mb-0">{{ high_priority|length }}</h4>
                     <small>High Priority Issues</small>
@@ -191,7 +252,7 @@
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card text-center py-2">
+            <div class="glass-card text-center py-2">
                 <div class="card-body">
                     <h4 class="text-info mb-0">{{ na_checks|length }}</h4>
                     <small>Not Applicable</small>
@@ -199,7 +260,7 @@
             </div>
         </div>
         <div class="col-md-2 col-6">
-            <div class="card text-center py-2">
+            <div class="glass-card text-center py-2">
                 <div class="card-body">
                     <h4 class="text-secondary mb-0">{{ errors|length }}</h4>
                     <small>Errors</small>
@@ -208,8 +269,8 @@
         </div>
     </div>
     {% if high_priority %}
-    <div class="card mb-4 border-danger shadow-sm">
-        <div class="card-header bg-danger text-white">
+    <div class="glass-card mb-4 border-danger shadow-sm">
+        <div class="glass-header bg-danger text-white">
             <h5>🚨 High Priority Issues</h5>
         </div>
         <div class="card-body">
@@ -238,8 +299,8 @@
         </div>
     </div>
     {% endif %}
-    <div class="card">
-        <div class="card-header">
+    <div class="glass-card">
+        <div class="glass-header">
             <h5>📋 Detailed Compliance Results</h5>
         </div>
         <div class="card-body">
@@ -284,19 +345,21 @@
                                     {% endif %}
                                 </td>
                                 <td>
+                                    <span data-bs-toggle="tooltip" data-bs-placement="top" title="{{ result.compliance_status }}">
                                     {% if result.compliance_status == 'Yes' %}
-                                    <span class="status-yes">✅ Yes</span>
+                                    <span class="status-yes">✅</span>
                                     {% elif result.compliance_status == 'No' %}
-                                    <span class="status-no">❌ No</span>
+                                    <span class="status-no">❌</span>
                                     {% elif result.compliance_status == 'Error' %}
-                                    <span class="status-error">⚠️ Error</span>
+                                    <span class="status-error">⚠️</span>
                                     {% elif result.compliance_status == 'N/A' %}
-                                    <span class="status-na">➖ N/A</span>
+                                    <span class="status-na">➖</span>
                                     {% elif result.compliance_status == '-' %}
-                                    <span class="status-info">ℹ️ Info</span>
+                                    <span class="status-info">ℹ️</span>
                                     {% else %}
                                     <span>{{ result.compliance_status }}</span>
                                     {% endif %}
+                                    </span>
                                 </td>
                                 <td>
                                     <span class="badge bg-{{ 'danger' if result.threat_level == 'High' else 'warning' if result.threat_level == 'Medium' else 'info' if result.threat_level == 'Low' else 'secondary' }}">
@@ -314,10 +377,24 @@
             </div>
         </div>
     </div>
+    <a href="{{ url_for('compliance') }}" class="btn btn-fab" data-bs-toggle="tooltip" data-bs-placement="left" title="Start New Scan">
+        <span>＋</span>
+    </a>
 </div>
 <footer class="footer mt-5">
-    <div>Security Compliance Automation &copy; {{ 2024 }} &mdash; Powered by Flask & Bootstrap 5</div>
+    <div>
+        Security Compliance Automation &copy; {{ 2024 }} &mdash; Powered by Flask & Bootstrap 5
+        &nbsp;|&nbsp;
+        <a href="https://flask.palletsprojects.com/" target="_blank">Docs</a>
+        <a href="mailto:support@example.com">Support</a>
+    </div>
 </footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+</script>
 </body>
 </html> 
