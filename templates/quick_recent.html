@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recent Scans Report - Security Compliance Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">🔒 Security Compliance Automation</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/compliance">Compliance Check</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/reports">Reports</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>🕒 Recent Scans Report</h1>
+        <a href="/reports" class="btn btn-outline-primary">← Back to Reports</a>
+    </div>
+    
+    <!-- Recent Scans Summary -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-primary">{{ recent_data|length }}</h4>
+                    <small>Total Scans</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-success">{{ recent_data|selectattr('compliance_status', 'equalto', 'Yes')|list|length }}</h4>
+                    <small>Compliant</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-danger">{{ recent_data|selectattr('compliance_status', 'equalto', 'No')|list|length }}</h4>
+                    <small>Non-Compliant</small>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h4 class="text-warning">{{ recent_data|selectattr('compliance_status', 'equalto', 'Error')|list|length }}</h4>
+                    <small>Errors</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Scans Table -->
+    <div class="card">
+        <div class="card-header">
+            <h5>Recent Scans (Last 100)</h5>
+        </div>
+        <div class="card-body">
+            {% if recent_data %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Service Type</th>
+                            <th>IP Address</th>
+                            <th>Parameter</th>
+                            <th>Status</th>
+                            <th>Threat Level</th>
+                            <th>Scan Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_data %}
+                        <tr>
+                            <td>{{ item.service_type }}</td>
+                            <td>{{ item.ip_address }}</td>
+                            <td>
+                                <small>{{ item.parameter[:60] }}{% if item.parameter|length > 60 %}...{% endif %}</small>
+                            </td>
+                            <td>
+                                {% if item.compliance_status == 'Yes' %}
+                                <span class="badge bg-success">✅ Yes</span>
+                                {% elif item.compliance_status == 'No' %}
+                                <span class="badge bg-danger">❌ No</span>
+                                {% elif item.compliance_status == 'Error' %}
+                                <span class="badge bg-warning">⚠️ Error</span>
+                                {% elif item.compliance_status == 'N/A' %}
+                                <span class="badge bg-secondary">➖ N/A</span>
+                                {% elif item.compliance_status == '-' %}
+                                <span class="badge bg-info">ℹ️ Info</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ item.compliance_status }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ 'danger' if item.threat_level == 'High' else 'warning' if item.threat_level == 'Medium' else 'info' if item.threat_level == 'Low' else 'secondary' }}">
+                                    {{ item.threat_level }}
+                                </span>
+                            </td>
+                            <td>
+                                <small>{{ item.scan_date }}</small>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No recent scans available.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html> 

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reports - Security Compliance Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">🔒 Security Compliance Automation</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/compliance">Compliance Check</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" aria-current="page" href="/reports">Reports</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="mb-4">📄 Generate Reports</h1>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📊 Custom Report Generator</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Generate custom reports from your compliance scan data.</p>
+                    
+                    <form method="POST" action="/reports">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="report_type" class="form-label">Report Type</label>
+                                <select class="form-select" id="report_type" name="report_type" required>
+                                    <option value="">Select report type...</option>
+                                    <option value="summary">Summary Report</option>
+                                    <option value="detailed">Detailed Report</option>
+                                    <option value="compliance">Compliance Status Report</option>
+                                    <option value="issues">Issues Report</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="format" class="form-label">Output Format</label>
+                                <select class="form-select" id="format" name="format" required>
+                                    <option value="html">HTML</option>
+                                    <option value="csv">CSV</option>
+                                    <option value="json">JSON</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="date_from" class="form-label">Date From</label>
+                                <input type="date" class="form-control" id="date_from" name="date_from">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="date_to" class="form-label">Date To</label>
+                                <input type="date" class="form-control" id="date_to" name="date_to">
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="service_type" class="form-label">Service Type</label>
+                                <select class="form-select" id="service_type" name="service_type">
+                                    <option value="">All Services</option>
+                                    <option value="SSH Service">SSH Service</option>
+                                    <option value="FTP Service">FTP Service</option>
+                                    <option value="DNS Server">DNS Server</option>
+                                    <option value="Email Service">Email Service</option>
+                                    <option value="Web Application">Web Application</option>
+                                    <option value="UTM / Switch / Router">UTM / Switch / Router</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="compliance_status" class="form-label">Compliance Status</label>
+                                <select class="form-select" id="compliance_status" name="compliance_status">
+                                    <option value="">All Statuses</option>
+                                    <option value="Yes">Compliant (Yes)</option>
+                                    <option value="No">Non-Compliant (No)</option>
+                                    <option value="Error">Errors</option>
+                                    <option value="N/A">Not Applicable</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="threat_level" class="form-label">Threat Level</label>
+                                <select class="form-select" id="threat_level" name="threat_level">
+                                    <option value="">All Levels</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Info">Info</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="ip_address" class="form-label">IP Address (Optional)</label>
+                                <input type="text" class="form-control" id="ip_address" name="ip_address" placeholder="e.g., 192.168.1.1">
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                📄 Generate Report
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>📋 Quick Reports</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="/reports/quick/summary" class="btn btn-outline-primary">
+                            📊 Summary Report
+                        </a>
+                        <a href="/reports/quick/issues" class="btn btn-outline-danger">
+                            ⚠️ Issues Report
+                        </a>
+                        <a href="/reports/quick/compliance" class="btn btn-outline-success">
+                            ✅ Compliance Report
+                        </a>
+                        <a href="/reports/quick/recent" class="btn btn-outline-info">
+                            🕒 Recent Scans
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5>💡 Report Types</h5>
+                </div>
+                <div class="card-body">
+                    <small class="text-muted">
+                        <strong>Summary Report:</strong> Overview of all scans and compliance status<br><br>
+                        <strong>Detailed Report:</strong> Complete scan results with all parameters<br><br>
+                        <strong>Compliance Report:</strong> Focus on compliance status and issues<br><br>
+                        <strong>Issues Report:</strong> Only non-compliant items and errors
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Set default dates (last 30 days)
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById('date_to').value = today.toISOString().split('T')[0];
+    document.getElementById('date_from').value = thirtyDaysAgo.toISOString().split('T')[0];
+});
+</script>
+</body>
+</html> 

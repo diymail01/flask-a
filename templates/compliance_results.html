@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Compliance Results - Security Compliance Automation</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .target-card {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f8f9fa;
+        }
+        .target-card:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+        }
+        .discovery-section {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+  <div class="container-fluid">
+    <a class="navbar-brand" href="/">🔒 Security Compliance Automation</a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="/">Home</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/compliance">Compliance Check</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">Dashboard</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="/reports">Reports</a>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container mt-4">
+    <h1 class="mb-4">🔍 Discovery Results</h1>
+    
+    <!-- Scan Configuration Summary -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>📋 Scan Configuration</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Service Type:</strong> {{ data.service_type }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Target Input:</strong> {{ data.target_input }}
+                </div>
+                <div class="col-md-4">
+                    <strong>Domain:</strong> {{ data.domain_input or 'N/A' }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Discovery Errors -->
+    {% if discovery_result.errors %}
+    <div class="alert alert-warning">
+        <h5>⚠️ Discovery Issues:</h5>
+        <ul class="mb-0">
+            {% for error in discovery_result.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+    
+    <!-- Form for all targets -->
+    {% if discovery_result.discovered_targets or discovery_result.manual_targets %}
+    <form method="POST" action="{{ url_for('run_compliance_scan') }}" id="scanForm">
+        <!-- Discovered Targets -->
+        {% if discovery_result.discovered_targets %}
+        <div class="discovery-section">
+            <h4>✅ Auto-discovered {{ discovery_result.discovered_targets|length }} target(s):</h4>
+            
+            {% for target in discovery_result.discovered_targets %}
+            <div class="target-card">
+                <div class="row align-items-center">
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="target_{{ loop.index0 }}" id="target_{{ loop.index0 }}" checked>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        {% if target.hostname and target.hostname != 'manual' %}
+                        <strong>📍 {{ target.hostname }}</strong><br>
+                        <span class="text-muted">🌐 {{ target.ip }}</span>
+                        {% else %}
+                        <strong>🌐 {{ target.ip }}</strong>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-3">
+                        {% if target.priority %}
+                        <span class="badge bg-info">Priority: {{ target.priority }}</span><br>
+                        {% endif %}
+                        {% if target.ports_detected %}
+                        <small class="text-muted">Ports: {{ target.ports_detected|join(', ') }}</small>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-4">
+                        <span class="badge bg-secondary">{{ target.type }}</span>
+                        <small class="text-muted d-block">{{ target.source }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Manual Targets -->
+        {% if discovery_result.manual_targets %}
+        <div class="discovery-section">
+            <h4>📝 Manual targets ({{ discovery_result.manual_targets|length }}):</h4>
+            
+            {% for target in discovery_result.manual_targets %}
+            <div class="target-card">
+                <div class="row align-items-center">
+                    <div class="col-md-1">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="target_manual_{{ loop.index0 }}" id="target_manual_{{ loop.index0 }}" checked>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <strong>🌐 {{ target.ip }}</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <span class="badge bg-secondary">{{ target.type }}</span>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">{{ target.source }}</small>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <!-- Action Buttons -->
+        <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
+            <button type="submit" class="btn btn-primary btn-lg">
+                🚀 Run Compliance Check
+            </button>
+            <a href="{{ url_for('compliance') }}" class="btn btn-secondary btn-lg">
+                🔄 Start New Scan
+            </a>
+        </div>
+        
+        <!-- Progress indicator (hidden initially) -->
+        <div id="progressSection" style="display: none;" class="mt-4">
+            <div class="card">
+                <div class="card-body text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Running compliance checks... This may take a few minutes.</p>
+                </div>
+            </div>
+        </div>
+    </form>
+    {% endif %}
+    
+    <!-- No Targets Found -->
+    {% if not discovery_result.discovered_targets and not discovery_result.manual_targets %}
+    <div class="alert alert-danger">
+        <h5>❌ No targets discovered or provided</h5>
+        <p>Please check your input and try again.</p>
+        <a href="{{ url_for('compliance') }}" class="btn btn-primary">🔄 Start New Scan</a>
+    </div>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Only add event listener if the form exists
+const scanForm = document.getElementById('scanForm');
+if (scanForm) {
+    scanForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show progress indicator
+        document.getElementById('progressSection').style.display = 'block';
+        
+        // Submit form via AJAX
+        fetch('{{ url_for("run_compliance_scan") }}', {
+            method: 'POST',
+            body: new FormData(this)
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Redirect to final results page
+                window.location.href = '{{ url_for("final_compliance_results") }}';
+            } else {
+                alert('Error: ' + data.error);
+                document.getElementById('progressSection').style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred during the scan.');
+            document.getElementById('progressSection').style.display = 'none';
+        });
+    });
+}
+</script>
+</body>
+</html> 
