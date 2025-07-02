@@ -3,24 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Final Compliance Results - Security Compliance Automation</title>
+    <title>Compliance Results - Security Compliance Automation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        body {
+            font-family: 'Inter', 'Roboto', 'system-ui', Arial, sans-serif;
+            background: #f6f8fa;
+            color: #222;
+        }
+        .navbar {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            font-weight: 600;
+        }
+        .navbar-brand {
+            font-size: 1.4rem;
+            letter-spacing: 1px;
+        }
+        .card {
+            border-radius: 18px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.06);
+            border: none;
+        }
+        .card-header {
+            border-radius: 18px 18px 0 0;
+            background: #f3f6fa;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        .table {
+            border-radius: 12px;
+            overflow: hidden;
+            background: #fff;
+        }
+        .table thead {
+            background: #1f4788;
+        }
+        .table thead th {
+            color: #fff;
+            font-weight: 600;
+            border: none;
+        }
+        .table-striped > tbody > tr:nth-of-type(odd) {
+            background-color: #f8fafc;
+        }
+        .table-hover tbody tr:hover {
+            background-color: #e9f0fa;
+        }
+        .btn {
+            border-radius: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 1px 4px rgba(31,71,136,0.07);
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #1f4788 60%, #3a7bd5 100%);
+            border: none;
+        }
+        .btn-info, .btn-success, .btn-secondary {
+            border: none;
+        }
         .status-yes { color: #198754; font-weight: bold; }
         .status-no { color: #dc3545; font-weight: bold; }
         .status-error { color: #fd7e14; font-weight: bold; }
         .status-na { color: #6c757d; font-weight: bold; }
         .status-info { color: #0d6efd; font-weight: bold; }
-        .threat-high { background-color: #f8d7da; }
-        .threat-medium { background-color: #fff3cd; }
-        .threat-low { background-color: #d1ecf1; }
-        .threat-info { background-color: #e2e3e5; }
+        .threat-high { background-color: #fff0f0; }
+        .threat-medium { background-color: #fffbe6; }
+        .threat-low { background-color: #e6f7fa; }
+        .threat-info { background-color: #f4f6f8; }
+        .footer {
+            margin-top: 48px;
+            padding: 18px 0 8px 0;
+            background: #f3f6fa;
+            color: #888;
+            text-align: center;
+            font-size: 0.98rem;
+            border-radius: 18px 18px 0 0;
+        }
+        @media (max-width: 768px) {
+            .card, .table, .navbar, .footer { border-radius: 10px !important; }
+            .navbar-brand { font-size: 1.1rem; }
+        }
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top">
   <div class="container-fluid">
-    <a class="navbar-brand" href="/">🔒 Security Compliance Automation</a>
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <span style="font-size:1.5rem; margin-right:8px;">🔒</span> Security Compliance
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -43,27 +115,23 @@
   </div>
 </nav>
 
-<div class="container mt-4">
-    <h1 class="mb-4">📊 Compliance Scan Results</h1>
-    
-    <!-- Success Message -->
+<div class="container mt-5 mb-5">
+    <h1 class="mb-4 fw-bold" style="letter-spacing:1px;">📊 Compliance Scan Results</h1>
     {% if saved_count > 0 %}
-    <div class="alert alert-success">
+    <div class="alert alert-success shadow-sm">
         <h5>✅ Scan Completed Successfully!</h5>
         <p>{{ saved_count }} results have been saved to the database.</p>
     </div>
     {% endif %}
-    
-    <!-- Scan Summary -->
     <div class="card mb-4">
         <div class="card-header d-flex justify-content-between align-items-center">
             <h5>📋 Scan Summary</h5>
-            <a href="{{ url_for('download_report') }}" class="btn btn-primary btn-sm" target="_blank">
-                <span class="me-1">📥</span> Download as PDF
+            <a href="{{ url_for('download_report') }}" class="btn btn-primary btn-sm d-flex align-items-center gap-1" target="_blank">
+                <span>📥</span> Download as PDF
             </a>
         </div>
         <div class="card-body">
-            <div class="row">
+            <div class="row g-4">
                 <div class="col-md-3">
                     <strong>Service Type:</strong><br>
                     {{ compliance_data.service_type }}
@@ -83,75 +151,70 @@
             </div>
         </div>
     </div>
-    
-    <!-- Metrics -->
-    <div class="row mb-4">
+    <div class="row mb-4 g-3">
         {% set compliant = results|selectattr('compliance_status', 'equalto', 'Yes')|list %}
         {% set non_compliant = results|selectattr('compliance_status', 'equalto', 'No')|list %}
         {% set errors = results|selectattr('compliance_status', 'equalto', 'Error')|list %}
         {% set na_checks = results|selectattr('compliance_status', 'equalto', 'N/A')|list %}
         {% set info_checks = results|selectattr('compliance_status', 'equalto', '-')|list %}
         {% set high_priority = results|selectattr('threat_level', 'equalto', 'High')|selectattr('compliance_status', 'equalto', 'No')|list %}
-        
-        <div class="col-md-2">
-            <div class="card text-center">
+        <div class="col-md-2 col-6">
+            <div class="card text-center py-2">
                 <div class="card-body">
-                    <h4 class="text-primary">{{ results|length }}</h4>
+                    <h4 class="text-primary mb-0">{{ results|length }}</h4>
                     <small>Total Checks</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
+        <div class="col-md-2 col-6">
+            <div class="card text-center py-2">
                 <div class="card-body">
-                    <h4 class="text-success">{{ compliant|length }}</h4>
+                    <h4 class="text-success mb-0">{{ compliant|length }}</h4>
                     <small>Compliant</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
+        <div class="col-md-2 col-6">
+            <div class="card text-center py-2">
                 <div class="card-body">
-                    <h4 class="text-danger">{{ non_compliant|length }}</h4>
+                    <h4 class="text-danger mb-0">{{ non_compliant|length }}</h4>
                     <small>Non-Compliant</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
+        <div class="col-md-2 col-6">
+            <div class="card text-center py-2">
                 <div class="card-body">
-                    <h4 class="text-warning">{{ high_priority|length }}</h4>
+                    <h4 class="text-warning mb-0">{{ high_priority|length }}</h4>
                     <small>High Priority Issues</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
+        <div class="col-md-2 col-6">
+            <div class="card text-center py-2">
                 <div class="card-body">
-                    <h4 class="text-info">{{ na_checks|length }}</h4>
+                    <h4 class="text-info mb-0">{{ na_checks|length }}</h4>
                     <small>Not Applicable</small>
                 </div>
             </div>
         </div>
-        <div class="col-md-2">
-            <div class="card text-center">
+        <div class="col-md-2 col-6">
+            <div class="card text-center py-2">
                 <div class="card-body">
-                    <h4 class="text-secondary">{{ errors|length }}</h4>
+                    <h4 class="text-secondary mb-0">{{ errors|length }}</h4>
                     <small>Errors</small>
                 </div>
             </div>
         </div>
     </div>
-    
-    <!-- High Priority Issues -->
     {% if high_priority %}
-    <div class="card mb-4">
+    <div class="card mb-4 border-danger shadow-sm">
         <div class="card-header bg-danger text-white">
             <h5>🚨 High Priority Issues</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-sm">
+                <table class="table table-sm table-hover align-middle">
                     <thead>
                         <tr>
                             <th>Sr. No.</th>
@@ -165,7 +228,7 @@
                         <tr>
                             <td>{{ result.sr_no }}</td>
                             <td>{{ result.parameter[:60] }}{% if result.parameter|length > 60 %}...{% endif %}</td>
-                            <td>{{ result.ip_address }}</td>
+                            <td>{{ result.hostname if result.hostname and result.hostname != 'manual' else result.ip_address }}{% if result.hostname and result.hostname != 'manual' %}<br><span class="text-muted">({{ result.ip_address }})</span>{% endif %}</td>
                             <td>{{ result.remarks[:80] }}{% if result.remarks|length > 80 %}...{% endif %}</td>
                         </tr>
                         {% endfor %}
@@ -175,16 +238,14 @@
         </div>
     </div>
     {% endif %}
-    
-    <!-- Detailed Results -->
     <div class="card">
         <div class="card-header">
             <h5>📋 Detailed Compliance Results</h5>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
                         <tr>
                             <th>Sr. No.</th>
                             <th>Parameter</th>
@@ -205,7 +266,7 @@
                         {% endfor %}
                         {% for key, group in grouped.items() %}
                             {% set hostname, ip = key.split('|', 1) %}
-                            <tr style="background-color: #f0f4fa;">
+                            <tr style="background-color: #f3f6fa;">
                                 <td colspan="6">
                                     <strong style="font-size: 1.1em;">{{ hostname if hostname else ip }}{% if hostname %} <span class='text-muted' style='font-size:0.95em;'>({{ ip }})</span>{% endif %}</strong>
                                 </td>
@@ -253,24 +314,10 @@
             </div>
         </div>
     </div>
-    
-    <!-- Action Buttons -->
-    <div class="d-grid gap-2 d-md-flex justify-content-md-center mt-4">
-        <a href="{{ url_for('compliance') }}" class="btn btn-primary btn-lg">
-            🔄 Start New Scan
-        </a>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-info btn-lg">
-            📊 View Dashboard
-        </a>
-        <a href="{{ url_for('reports') }}" class="btn btn-success btn-lg">
-            📄 Generate Reports
-        </a>
-        <a href="{{ url_for('home') }}" class="btn btn-secondary btn-lg">
-            🏠 Back to Home
-        </a>
-    </div>
 </div>
-
+<footer class="footer mt-5">
+    <div>Security Compliance Automation &copy; {{ 2024 }} &mdash; Powered by Flask & Bootstrap 5</div>
+</footer>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html> 
