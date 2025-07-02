@@ -50,7 +50,7 @@
                     <p><strong>Total Results:</strong> {{ data|length }}</p>
                 </div>
                 <div class="col-md-6">
-                    <p><strong>Generated:</strong> {{ moment().format('YYYY-MM-DD HH:mm:ss') }}</p>
+                    <p><strong>Generated:</strong> {{ generated_time }}</p>
                     <p><strong>Filters Applied:</strong> 
                         {% if filters.date_from or filters.date_to or filters.service_type or filters.compliance_status or filters.threat_level or filters.ip_address %}
                             Yes
