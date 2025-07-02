@@ -5,51 +5,115 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Compliance Check - Security Compliance Automation</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
     <style>
-        .form-section {
-            background-color: #f8f9fa;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 20px;
+        body {
+            font-family: 'Inter', 'Nunito', 'system-ui', Arial, sans-serif;
+            background: linear-gradient(135deg, #f6f8fa 0%, #e3e9f7 100%);
+            color: #23272f;
+            min-height: 100vh;
         }
-        .info-box {
-            background-color: #d1ecf1;
-            border: 1px solid #bee5eb;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 20px;
+        .navbar {
+            backdrop-filter: blur(8px);
+            background: rgba(255,255,255,0.85) !important;
+            box-shadow: 0 4px 24px rgba(31,71,136,0.07);
+            font-weight: 600;
+            border-bottom: 1px solid #e3e9f7;
+        }
+        .navbar-brand {
+            font-size: 1.5rem;
+            letter-spacing: 1px;
+            font-weight: 700;
+            color: #1f4788 !important;
+        }
+        .nav-link.active, .nav-link:focus, .nav-link:hover {
+            color: #3a7bd5 !important;
+            border-bottom: 2px solid #3a7bd5;
+            background: rgba(58,123,213,0.07);
+            border-radius: 8px 8px 0 0;
+        }
+        .main-container {
+            max-width: 950px;
+            margin: 48px auto 0 auto;
+            padding: 0 12px 48px 12px;
+        }
+        .glass-card {
+            border-radius: 22px;
+            background: rgba(255,255,255,0.75);
+            box-shadow: 0 8px 32px rgba(31,71,136,0.10);
+            backdrop-filter: blur(6px);
+            border: 1px solid #e3e9f7;
+            margin-bottom: 2rem;
+            transition: box-shadow 0.2s;
+        }
+        .glass-card:hover {
+            box-shadow: 0 12px 36px rgba(31,71,136,0.16);
+        }
+        .glass-header {
+            border-radius: 22px 22px 0 0;
+            background: rgba(243,246,250,0.85);
+            font-weight: 700;
+            font-size: 1.15rem;
+            border-bottom: 1px solid #e3e9f7;
+        }
+        .btn {
+            border-radius: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            box-shadow: 0 1px 4px rgba(31,71,136,0.07);
+            transition: box-shadow 0.2s, background 0.2s;
+        }
+        .btn-primary {
+            background: linear-gradient(90deg, #1f4788 60%, #3a7bd5 100%);
+            border: none;
+        }
+        .btn-primary:hover, .btn-primary:focus {
+            background: linear-gradient(90deg, #3a7bd5 60%, #1f4788 100%);
+            box-shadow: 0 2px 8px rgba(31,71,136,0.13);
+        }
+        .alert {
+            border-radius: 16px;
+            box-shadow: 0 2px 12px rgba(31,71,136,0.06);
+        }
+        @media (max-width: 900px) {
+            .main-container { max-width: 100%; }
+        }
+        @media (max-width: 768px) {
+            .main-container { padding: 0 2px 48px 2px; }
+            .glass-card, .navbar { border-radius: 10px !important; }
+            .navbar-brand { font-size: 1.1rem; }
         }
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
   <div class="container-fluid">
-    <a class="navbar-brand" href="/">🔒 Security Compliance Automation</a>
+    <a class="navbar-brand d-flex align-items-center" href="/">
+      <img src="https://cdn-icons-png.flaticon.com/512/3064/3064197.png" alt="Logo" width="36" height="36" class="me-2" style="border-radius:8px;"> Security Compliance
+    </a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
     </button>
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item">
-          <a class="nav-link" href="/">Home</a>
+          <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="/">Home</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link active" aria-current="page" href="/compliance">Compliance Check</a>
+          <a class="nav-link {% if '/compliance' in request.path %}active{% endif %}" href="/compliance">Compliance Check</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/dashboard">Dashboard</a>
+          <a class="nav-link {% if '/dashboard' in request.path %}active{% endif %}" href="/dashboard">Dashboard</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="/reports">Reports</a>
+          <a class="nav-link {% if '/reports' in request.path %}active{% endif %}" href="/reports">Reports</a>
         </li>
       </ul>
     </div>
   </div>
 </nav>
-
-<div class="container mt-4">
-    <h1 class="mb-4">🔍 Enhanced Compliance Check</h1>
-    
+<div class="main-container">
+    <h1 class="mb-4 fw-bold text-center" style="letter-spacing:1px;">🔍 Enhanced Compliance Check</h1>
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
@@ -60,84 +124,77 @@
             {% endfor %}
         {% endif %}
     {% endwith %}
-    
-    <form method="POST" action="{{ url_for('compliance') }}">
-        <div class="form-section">
-            <h3>🎯 Target Configuration</h3>
-            
-            <div class="mb-3">
-                <label for="service_type" class="form-label">Select Service Type</label>
-                <select class="form-select" id="service_type" name="service_type" required>
-                    <option value="">Choose a service type...</option>
-                    {% for service_type in compliance_types %}
-                        <option value="{{ service_type }}">{{ service_type }}</option>
-                    {% endfor %}
-                </select>
-                <div class="form-text">Choose the type of service to scan</div>
-            </div>
-            
-            <div class="mb-3">
-                <label for="target_input" class="form-label">Target Input</label>
-                <input type="text" class="form-control" id="target_input" name="target_input" 
-                       placeholder="Enter domain name or IP address" required>
-                <div class="form-text">
-                    <strong>Smart Discovery:</strong><br>
-                    • DNS Server: Enter domain (e.g., example.com) to auto-discover DNS servers<br>
-                    • Email Service: Enter domain to auto-discover mail servers<br>
-                    • Web Application: Enter domain or IP address<br>
-                    • Other services: Enter IP address
-                </div>
-            </div>
-            
-            <div class="mb-3" id="domain_section" style="display: none;">
-                <label for="domain_input" class="form-label">Domain (Optional)</label>
-                <input type="text" class="form-control" id="domain_input" name="domain_input" 
-                       placeholder="example.com">
-                <div class="form-text">Required for some DNS record checks and email spoofing tests</div>
-            </div>
+    <div class="glass-card">
+        <div class="glass-header">
+            <h3 class="mb-0">🎯 Target Configuration</h3>
         </div>
-        
-        <div class="form-section">
-            <h3>⚙️ Advanced Options</h3>
-            <div class="row">
-                <div class="col-md-6">
-                    <label for="timeout" class="form-label">Connection Timeout (seconds)</label>
-                    <input type="range" class="form-range" id="timeout" name="timeout" min="1" max="10" value="5">
-                    <div class="form-text">Current: <span id="timeout_value">5</span> seconds</div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('compliance') }}">
+                <div class="mb-3">
+                    <label for="service_type" class="form-label">Select Service Type</label>
+                    <select class="form-select" id="service_type" name="service_type" required>
+                        <option value="">Choose a service type...</option>
+                        {% for service_type in compliance_types %}
+                            <option value="{{ service_type }}">{{ service_type }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="form-text">Choose the type of service to scan</div>
                 </div>
-                <div class="col-md-6">
-                    <label for="max_threads" class="form-label">Max Parallel Connections</label>
-                    <input type="range" class="form-range" id="max_threads" name="max_threads" min="10" max="100" value="50">
-                    <div class="form-text">Current: <span id="max_threads_value">50</span> connections</div>
+                <div class="mb-3">
+                    <label for="target_input" class="form-label">Target Input</label>
+                    <input type="text" class="form-control" id="target_input" name="target_input" 
+                           placeholder="Enter domain name or IP address" required>
+                    <div class="form-text">
+                        <strong>Smart Discovery:</strong><br>
+                        • DNS Server: Enter domain (e.g., example.com) to auto-discover DNS servers<br>
+                        • Email Service: Enter domain to auto-discover mail servers<br>
+                        • Web Application: Enter domain or IP address<br>
+                        • Other services: Enter IP address
+                    </div>
                 </div>
-            </div>
+                <div class="mb-3" id="domain_section" style="display: none;">
+                    <label for="domain_input" class="form-label">Domain (Optional)</label>
+                    <input type="text" class="form-control" id="domain_input" name="domain_input" 
+                           placeholder="example.com">
+                    <div class="form-text">Required for some DNS record checks and email spoofing tests</div>
+                </div>
+                <div class="mb-3">
+                    <div class="glass-header">⚙️ Advanced Options</div>
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <label for="timeout" class="form-label">Connection Timeout (seconds)</label>
+                            <input type="range" class="form-range" id="timeout" name="timeout" min="1" max="10" value="5">
+                            <div class="form-text">Current: <span id="timeout_value">5</span> seconds</div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="max_threads" class="form-label">Max Parallel Connections</label>
+                            <input type="range" class="form-range" id="max_threads" name="max_threads" min="10" max="100" value="50">
+                            <div class="form-text">Current: <span id="max_threads_value">50</span> connections</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg">🔍 Discover Targets</button>
+                </div>
+            </form>
         </div>
-        
-        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-            <button type="submit" class="btn btn-primary btn-lg">🔍 Discover Targets</button>
-        </div>
-    </form>
+    </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     // Show/hide domain input based on service type
     document.getElementById('service_type').addEventListener('change', function() {
         const serviceType = this.value;
         const domainSection = document.getElementById('domain_section');
-        
         if (serviceType === 'DNS Server' || serviceType === 'Email Service') {
             domainSection.style.display = 'block';
         } else {
             domainSection.style.display = 'none';
         }
     });
-    
-    // Update range input values
     document.getElementById('timeout').addEventListener('input', function() {
         document.getElementById('timeout_value').textContent = this.value;
     });
-    
     document.getElementById('max_threads').addEventListener('input', function() {
         document.getElementById('max_threads_value').textContent = this.value;
     });
