@@ -866,10 +866,18 @@ def check_email_relay(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
+def reliable_smtp_port_check(ip):
+    # Try with 5s timeout, retry once if needed
+    for _ in range(2):
+        open_ports = quick_port_scan(ip, [25], timeout=5)
+        if open_ports:
+            return True
+    return False
+
 def check_mta_version(ip, domain=None):
     """Check if MTA version is visible"""
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "MTA version check not implemented"
     except Exception as e:
@@ -878,7 +886,7 @@ def check_mta_version(ip, domain=None):
 def check_mta_old_version(ip, domain=None):
     """Check if MTA is using old/discontinued version"""
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "MTA old version check not implemented"
     except Exception as e:
@@ -887,7 +895,7 @@ def check_mta_old_version(ip, domain=None):
 def check_mta_tls(ip, domain=None):
     """Check if MTA supports TLS"""
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "MTA TLS check not implemented"
     except Exception as e:
@@ -896,7 +904,7 @@ def check_mta_tls(ip, domain=None):
 def check_smtp_auth(ip, domain=None):
     """Check if SMTP AUTH is disabled on MX server"""
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "SMTP AUTH check not implemented"
     except Exception as e:
@@ -905,7 +913,7 @@ def check_smtp_auth(ip, domain=None):
 def check_user_enumeration(ip, domain=None):
     """Check if user enumeration via VRFY is disabled"""
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "User enumeration check not implemented"
     except Exception as e:
@@ -916,7 +924,7 @@ def check_domain_spoofing(ip, domain=None):
     if not domain:
         return "N/A", "Domain required for spoofing check"
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "Domain spoofing check not implemented"
     except Exception as e:
@@ -933,7 +941,7 @@ def check_subdomain_spoofing(ip, domain=None):
     if not domain:
         return "N/A", "Domain required for subdomain spoofing check"
     try:
-        if not quick_port_scan(ip, [25]):
+        if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         return "N/A", "Subdomain spoofing check not implemented"
     except Exception as e:
