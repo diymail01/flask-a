@@ -2446,158 +2446,18 @@ def save_to_db(results):
             except:
                 pass
 # Generate PDF report
-# def generate_pdf_report(results, scan_info):
-#     buffer = io.BytesIO()
-#     doc = SimpleDocTemplate(buffer, pagesize=A4)
-#     elements = []
-    
-#     # Styles
-#     styles = getSampleStyleSheet()
-#     title_style = ParagraphStyle(
-#         'CustomTitle',
-#         parent=styles['Heading1'],
-#         fontSize=24,
-#         textColor=colors.HexColor('#1f4788'),
-#         spaceAfter=30,
-#         alignment=1
-#     )
-    
-#     # Title
-#     elements.append(Paragraph("Security Compliance Report", title_style))
-#     elements.append(Spacer(1, 20))
-    
-#     # Scan Information
-#     info_data = [
-#         ['Scan Date:', scan_info['scan_date']],
-#         ['Service Type:', scan_info['service_type']],
-#         ['IP Address:', scan_info['ip_address']]
-#     ]
-    
-#     if scan_info.get('domain'):
-#         info_data.append(['Domain:', scan_info['domain']])
-    
-#     info_table = Table(info_data, colWidths=[2*inch, 4*inch])
-#     info_table.setStyle(TableStyle([
-#         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
-#         ('FONTSIZE', (0, 0), (-1, -1), 12),
-#         ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#1f4788')),
-#     ]))
-#     elements.append(info_table)
-#     elements.append(Spacer(1, 30))
-    
-#     # Summary Statistics
-#     total_checks = len(results)
-#     compliant = len([r for r in results if r['compliance_status'] == 'Yes'])
-#     non_compliant = len([r for r in results if r['compliance_status'] == 'No'])
-#     errors = len([r for r in results if r['compliance_status'] == 'Error'])
-#     na_checks = len([r for r in results if r['compliance_status'] == 'N/A'])
-    
-#     summary_data = [
-#         ['Total Checks:', str(total_checks)],
-#         ['Compliant:', f"{compliant} ({compliant/total_checks*100:.1f}%)"],
-#         ['Non-Compliant:', f"{non_compliant} ({non_compliant/total_checks*100:.1f}%)"],
-#         ['Not Applicable:', f"{na_checks}"],
-#         ['Errors:', str(errors)]
-#     ]
-    
-#     summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
-#     summary_table.setStyle(TableStyle([
-#         ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-#         ('FONTSIZE', (0, 0), (-1, -1), 10),
-#         ('GRID', (0, 0), (-1, -1), 1, colors.grey),
-#         ('BACKGROUND', (0, 0), (0, -1), colors.lightgrey),
-#     ]))
-#     elements.append(summary_table)
-#     elements.append(Spacer(1, 30))
-    
-#     # High priority issues
-#     high_priority = [r for r in results if r['threat_level'] == 'High' and r['compliance_status'] == 'No']
-#     if high_priority:
-#         elements.append(Paragraph("High Priority Issues", styles['Heading2']))
-#         elements.append(Spacer(1, 10))
-        
-#         high_data = [['Parameter', 'Remarks']]
-#         for issue in high_priority:
-#             high_data.append([
-#                 Paragraph(issue['parameter'][:60] + '...' if len(issue['parameter']) > 60 else issue['parameter'], styles['Normal']),
-#                 Paragraph(issue['remarks'][:60] + '...' if len(issue['remarks']) > 60 else issue['remarks'], styles['Normal'])
-#             ])
-        
-#         high_table = Table(high_data, colWidths=[4*inch, 3.3*inch])
-#         high_table.setStyle(TableStyle([
-#             ('BACKGROUND', (0, 0), (-1, 0), colors.red),
-#             ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-#             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-#             ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-#             ('FONTSIZE', (0, 0), (-1, 0), 11),
-#             ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-#             ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-#             ('GRID', (0, 0), (-1, -1), 1, colors.black),
-#         ]))
-#         elements.append(high_table)
-#         elements.append(Spacer(1, 20))
-    
-#     # All results
-#     elements.append(Paragraph("Detailed Compliance Check Results", styles['Heading2']))
-#     elements.append(Spacer(1, 10))
-    
-#     # Group by threat level
-#     for threat in ['High', 'Medium', 'Low', 'Info']:
-#         threat_results = [r for r in results if r['threat_level'] == threat]
-#         if threat_results:
-#             elements.append(Paragraph(f"{threat} Priority Checks", styles['Heading3']))
-            
-#             data = [['Parameter', 'Status', 'Remarks']]
-#             for result in threat_results:
-#                 # Color code status
-#                 if result['compliance_status'] == 'No':
-#                     status = Paragraph(f"<font color='red'><b>{result['compliance_status']}</b></font>", styles['Normal'])
-#                 elif result['compliance_status'] == 'Yes':
-#                     status = Paragraph(f"<font color='green'><b>{result['compliance_status']}</b></font>", styles['Normal'])
-#                 else:
-#                     status = Paragraph(result['compliance_status'], styles['Normal'])
-                
-#                 data.append([
-#                     Paragraph(result['parameter'][:50] + '...' if len(result['parameter']) > 50 else result['parameter'], styles['Normal']),
-#                     status,
-#                     Paragraph(result['remarks'][:40] + '...' if len(result['remarks']) > 40 else result['remarks'], styles['Normal'])
-#                 ])
-            
-#             table = Table(data, colWidths=[3.5*inch, 0.8*inch, 3*inch])
-#             table.setStyle(TableStyle([
-#                 ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-#                 ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-#                 ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-#                 ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-#                 ('FONTSIZE', (0, 0), (-1, 0), 10),
-#                 ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-#                 ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-#                 ('GRID', (0, 0), (-1, -1), 1, colors.black),
-#                 ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-#                 ('FONTSIZE', (0, 1), (-1, -1), 9),
-#                 ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f0f0f0')]),
-#             ]))
-#             elements.append(table)
-#             elements.append(Spacer(1, 15))
-    
-#     # Build PDF
-#     doc.build(elements)
-#     buffer.seek(0)
-#     return buffer
-
-# Generate PDF report
 
 
 
 
 # Fixed PDF generation function
 def generate_pdf_report(results, scan_info):
-    """Generate PDF report with proper error handling"""
+    """Generate PDF report with results grouped by target (hostname/IP) for clarity."""
     try:
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
         elements = []
-        
+
         # Styles
         styles = getSampleStyleSheet()
         title_style = ParagraphStyle(
@@ -2608,24 +2468,30 @@ def generate_pdf_report(results, scan_info):
             spaceAfter=30,
             alignment=1
         )
-        
+        target_header_style = ParagraphStyle(
+            'TargetHeader',
+            parent=styles['Heading2'],
+            fontSize=14,
+            textColor=colors.HexColor('#1f4788'),
+            spaceAfter=10,
+            spaceBefore=10,
+            fontName='Helvetica-Bold'
+        )
+
         # Title
         elements.append(Paragraph("Security Compliance Report", title_style))
         elements.append(Spacer(1, 20))
-        
-        # Scan Information - handle missing keys gracefully
+
+        # Scan Information
         info_data = [
             ['Scan Date:', str(scan_info.get('scan_date', 'Unknown'))],
             ['Service Type:', str(scan_info.get('service_type', 'Unknown'))],
             ['IP Address:', str(scan_info.get('ip_address', 'Unknown'))]
         ]
-        
         if scan_info.get('domain') and scan_info['domain'] != 'N/A':
             info_data.append(['Domain:', str(scan_info['domain'])])
-        
         if scan_info.get('hostname') and scan_info['hostname'] != 'manual':
             info_data.append(['Hostname:', str(scan_info['hostname'])])
-        
         info_table = Table(info_data, colWidths=[2*inch, 4*inch])
         info_table.setStyle(TableStyle([
             ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
@@ -2634,13 +2500,12 @@ def generate_pdf_report(results, scan_info):
         ]))
         elements.append(info_table)
         elements.append(Spacer(1, 30))
-        
+
         # Convert results to proper format if needed
         if results and isinstance(results, list) and len(results) > 0:
             if isinstance(results[0], dict):
                 results_list = results
             else:
-                # Handle pandas DataFrame or other formats
                 try:
                     if hasattr(results, 'to_dict'):
                         results_list = results.to_dict('records')
@@ -2650,13 +2515,13 @@ def generate_pdf_report(results, scan_info):
                     results_list = []
         else:
             results_list = []
-        
+
         if not results_list:
             elements.append(Paragraph("No compliance check results available", styles['Normal']))
             doc.build(elements)
             buffer.seek(0)
             return buffer
-        
+
         # Summary Statistics
         total_checks = len(results_list)
         compliant = len([r for r in results_list if str(r.get('compliance_status', '')).strip() == 'Yes'])
@@ -2664,7 +2529,7 @@ def generate_pdf_report(results, scan_info):
         errors = len([r for r in results_list if str(r.get('compliance_status', '')).strip() == 'Error'])
         na_checks = len([r for r in results_list if str(r.get('compliance_status', '')).strip() == 'N/A'])
         info_checks = len([r for r in results_list if str(r.get('compliance_status', '')).strip() == '-'])
-        
+
         if total_checks > 0:
             summary_data = [
                 ['Total Checks:', str(total_checks)],
@@ -2674,7 +2539,6 @@ def generate_pdf_report(results, scan_info):
                 ['Informational:', str(info_checks)],
                 ['Errors:', str(errors)]
             ]
-            
             summary_table = Table(summary_data, colWidths=[2*inch, 2*inch])
             summary_table.setStyle(TableStyle([
                 ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
@@ -2684,34 +2548,27 @@ def generate_pdf_report(results, scan_info):
             ]))
             elements.append(summary_table)
             elements.append(Spacer(1, 30))
-        
+
         # High priority issues
         high_priority = [r for r in results_list if str(r.get('threat_level', '')).strip() == 'High' and str(r.get('compliance_status', '')).strip() == 'No']
         if high_priority:
             elements.append(Paragraph("High Priority Issues", styles['Heading2']))
             elements.append(Spacer(1, 10))
-            
             high_data = [['Sr. No.', 'Parameter', 'Remarks']]
-            # Sort high priority issues by sr_no
             high_priority_sorted = sorted(high_priority, key=lambda x: int(x.get('sr_no', 999)))
-            
             for issue in high_priority_sorted:
                 sr_no = str(issue.get('sr_no', ''))
                 parameter = str(issue.get('parameter', ''))
                 remarks = str(issue.get('remarks', ''))
-                
-                # Limit text length to prevent table overflow
                 if len(parameter) > 80:
                     parameter = parameter[:80] + '...'
                 if len(remarks) > 80:
                     remarks = remarks[:80] + '...'
-                
                 high_data.append([
                     sr_no,
                     Paragraph(parameter, styles['Normal']),
                     Paragraph(remarks, styles['Normal'])
                 ])
-            
             high_table = Table(high_data, colWidths=[0.8*inch, 3.5*inch, 3*inch])
             high_table.setStyle(TableStyle([
                 ('BACKGROUND', (0, 0), (-1, 0), colors.red),
@@ -2726,87 +2583,89 @@ def generate_pdf_report(results, scan_info):
             ]))
             elements.append(high_table)
             elements.append(Spacer(1, 20))
-        
-        # Main compliance results table
+
+        # Main compliance results grouped by target
         elements.append(Paragraph("Detailed Compliance Check Results", styles['Heading2']))
         elements.append(Spacer(1, 10))
-        
-        # Create table data
-        data = [['Sr. No.', 'Parameters', 'Compliance (Yes/No)', 'Threat Level', 'Remarks']]
-        
-        # Sort results by sr_no
-        sorted_results = sorted(results_list, key=lambda x: int(x.get('sr_no', 999)))
-        
-        for result in sorted_results:
-            sr_no = str(result.get('sr_no', ''))
-            parameter = str(result.get('parameter', ''))
-            compliance_status = str(result.get('compliance_status', ''))
-            threat_level = str(result.get('threat_level', ''))
-            remarks = str(result.get('remarks', ''))
-            
-            # Limit text length to prevent table overflow
-            if len(parameter) > 60:
-                parameter = parameter[:60] + '...'
-            if len(remarks) > 60:
-                remarks = remarks[:60] + '...'
-            
-            # Color code compliance status
-            if compliance_status == 'No':
-                status = Paragraph(f"<font color='red'><b>{compliance_status}</b></font>", styles['Normal'])
-            elif compliance_status == 'Yes':
-                status = Paragraph(f"<font color='green'><b>{compliance_status}</b></font>", styles['Normal'])
-            elif compliance_status == '-':
-                status = Paragraph(f"<font color='blue'><b>-</b></font>", styles['Normal'])
+
+        # Group results by (hostname, ip_address)
+        grouped = {}
+        for r in results_list:
+            key = ((r.get('hostname') if r.get('hostname') and r.get('hostname') != 'manual' else ''), r.get('ip_address', ''))
+            if key not in grouped:
+                grouped[key] = []
+            grouped[key].append(r)
+
+        for (hostname, ip), group in grouped.items():
+            # Section header for each target
+            if hostname:
+                header = f"{hostname} ({ip})"
             else:
-                status = Paragraph(compliance_status, styles['Normal'])
-            
-            data.append([
-                sr_no,
-                Paragraph(parameter, styles['Normal']),
-                status,
-                threat_level,
-                Paragraph(remarks, styles['Normal'])
-            ])
-        
-        # Create table with proper column widths
-        table = Table(data, colWidths=[0.6*inch, 3.2*inch, 1.2*inch, 0.8*inch, 2.5*inch])
-        table.setStyle(TableStyle([
-            # Header row styling
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 10),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            
-            # Data rows styling
-            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f8f8')]),
-            
-            # Center align specific columns
-            ('ALIGN', (0, 0), (0, -1), 'CENTER'),  # Sr. No. column
-            ('ALIGN', (2, 0), (2, -1), 'CENTER'),  # Compliance column
-            ('ALIGN', (3, 0), (3, -1), 'CENTER'),  # Threat Level column
-        ]))
-        elements.append(table)
-        
-        # Build PDF
+                header = ip
+            elements.append(Paragraph(header, target_header_style))
+            # Table for this target
+            data = [['Sr. No.', 'Parameter', 'Status', 'Threat Level', 'Remarks']]
+            for result in sorted(group, key=lambda x: int(x.get('sr_no', 999))):
+                sr_no = str(result.get('sr_no', ''))
+                parameter = str(result.get('parameter', ''))
+                compliance_status = str(result.get('compliance_status', ''))
+                threat_level = str(result.get('threat_level', ''))
+                remarks = str(result.get('remarks', ''))
+                # Limit text length
+                if len(parameter) > 60:
+                    parameter = parameter[:60] + '...'
+                if len(remarks) > 60:
+                    remarks = remarks[:60] + '...'
+                # Color code compliance status
+                if compliance_status == 'No':
+                    status = Paragraph(f"<font color='red'><b>{compliance_status}</b></font>", styles['Normal'])
+                elif compliance_status == 'Yes':
+                    status = Paragraph(f"<font color='green'><b>{compliance_status}</b></font>", styles['Normal'])
+                elif compliance_status == '-':
+                    status = Paragraph(f"<font color='blue'><b>-</b></font>", styles['Normal'])
+                elif compliance_status == 'Error':
+                    status = Paragraph(f"<font color='orange'><b>Error</b></font>", styles['Normal'])
+                elif compliance_status == 'N/A':
+                    status = Paragraph(f"<font color='gray'><b>N/A</b></font>", styles['Normal'])
+                else:
+                    status = Paragraph(compliance_status, styles['Normal'])
+                data.append([
+                    sr_no,
+                    Paragraph(parameter, styles['Normal']),
+                    status,
+                    threat_level,
+                    Paragraph(remarks, styles['Normal'])
+                ])
+            table = Table(data, colWidths=[0.7*inch, 2.7*inch, 1.1*inch, 1.0*inch, 2.5*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 10),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+                ('FONTSIZE', (0, 1), (-1, -1), 9),
+                ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f8f8')]),
+                ('ALIGN', (0, 0), (0, -1), 'CENTER'),
+                ('ALIGN', (2, 0), (2, -1), 'CENTER'),
+                ('ALIGN', (3, 0), (3, -1), 'CENTER'),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 10))
+
         doc.build(elements)
         buffer.seek(0)
         return buffer
-        
     except Exception as e:
         print(f"PDF Generation Error: {str(e)}")
-        # Create a simple error PDF if main generation fails
         try:
             buffer = io.BytesIO()
             doc = SimpleDocTemplate(buffer, pagesize=A4)
             styles = getSampleStyleSheet()
-            
             elements = [
                 Paragraph("Error Generating Report", styles['Title']),
                 Spacer(1, 20),
@@ -2814,18 +2673,15 @@ def generate_pdf_report(results, scan_info):
                 Spacer(1, 20),
                 Paragraph("Please check the scan results and try again.", styles['Normal'])
             ]
-            
             doc.build(elements)
             buffer.seek(0)
             return buffer
         except Exception as inner_e:
             print(f"Error PDF Generation also failed: {str(inner_e)}")
-            # If even error PDF fails, return empty buffer
             empty_buffer = io.BytesIO()
             empty_buffer.write(b"PDF generation failed")
             empty_buffer.seek(0)
             return empty_buffer
-        
 
 
 # ============== ENHANCED UI FUNCTIONS ==============
@@ -3106,166 +2962,6 @@ def enhanced_compliance_check_page():
             # Run compliance check button
             if st.button("🚀 Run Compliance Check", type="primary", use_container_width=True):
                 run_enhanced_compliance_scan(selected_targets, service_type, discovered_domain)
-
-# def run_enhanced_compliance_scan(selected_targets, service_type, domain=None):
-#     """Run compliance scan on selected targets"""
-    
-#     results = []
-#     scan_date = datetime.datetime.now()
-    
-#     st.subheader("🔄 Running Compliance Checks")
-    
-#     total_targets = len(selected_targets)
-#     overall_progress = st.progress(0)
-#     overall_status = st.empty()
-    
-#     for target_idx, target in enumerate(selected_targets):
-#         ip_address = target['ip']
-#         hostname = target.get('hostname', 'Unknown')
-        
-#         overall_progress.progress((target_idx) / total_targets)
-#         overall_status.text(f"Scanning target {target_idx + 1} of {total_targets}: {hostname} ({ip_address})")
-        
-#         with st.expander(f"🎯 Target: {hostname} ({ip_address})", expanded=True):
-#             params = COMPLIANCE_TYPES[service_type]["parameters"]
-#             total_params = len(params)
-            
-#             target_progress = st.progress(0)
-#             target_status = st.empty()
-#             results_placeholder = st.empty()
-#             current_results = []
-            
-#             for param_idx, param_info in enumerate(params):
-#                 progress = (param_idx + 1) / total_params
-#                 target_progress.progress(progress)
-#                 target_status.text(f"Checking: {param_info['parameter'][:60]}...")
-                
-#                 check_func_name = param_info["check_function"]
-#                 if check_func_name in CHECK_FUNCTIONS:
-#                     try:
-#                         if domain:
-#                             compliance_status, remarks = CHECK_FUNCTIONS[check_func_name](ip_address, domain)
-#                         else:
-#                             compliance_status, remarks = CHECK_FUNCTIONS[check_func_name](ip_address)
-                        
-#                         result = {
-#                             'scan_date': scan_date,
-#                             'service_type': service_type,
-#                             'ip_address': ip_address,
-#                             'sr_no': param_info['sr_no'],
-#                             'parameter': param_info['parameter'],
-#                             'compliance_status': compliance_status,
-#                             'threat_level': param_info.get('threat_level', 'Info'),
-#                             'remarks': remarks,
-#                             'command_used': param_info.get('command', '').format(ip=ip_address, domain=domain or ''),
-#                             'hostname': hostname,
-#                             'target_type': target.get('type', 'unknown')
-#                         }
-                        
-#                         if domain:
-#                             result['domain'] = domain
-                        
-#                         current_results.append(result)
-#                         results.append(result)
-                        
-#                         df = pd.DataFrame(current_results)
-#                         df = df.sort_values('sr_no')
-#                         results_placeholder.dataframe(df[['sr_no', 'parameter', 'compliance_status', 'threat_level', 'remarks']], use_container_width=True)
-                        
-#                     except Exception as e:
-#                         st.error(f"Error running check '{param_info['parameter']}': {str(e)}")
-#                         continue
-                
-#                 time.sleep(0.05)
-            
-#             target_progress.empty()
-#             target_status.empty()
-            
-#             if current_results:
-#                 compliant_count = len([r for r in current_results if r['compliance_status'] == 'Yes'])
-#                 total_checks = len(current_results)
-                
-#                 col1, col2, col3 = st.columns(3)
-#                 with col1:
-#                     st.metric("Total Checks", total_checks)
-#                 with col2:
-#                     st.metric("Compliant", f"{compliant_count} ({compliant_count/total_checks*100:.1f}%)")
-#                 with col3:
-#                     non_compliant = len([r for r in current_results if r['compliance_status'] == 'No'])
-#                     st.metric("Issues Found", non_compliant)
-                
-#                 if st.button(f"📄 Generate Report for {hostname}", key=f"report_{target_idx}"):
-#                     pdf_buffer = generate_pdf_report(current_results, {
-#                         'service_type': service_type,
-#                         'ip_address': ip_address,
-#                         'domain': domain or 'N/A',
-#                         'scan_date': scan_date.strftime('%Y-%m-%d %H:%M:%S'),
-#                         'hostname': hostname
-#                     })
-                    
-#                     filename = f"compliance_report_{hostname}_{ip_address}_{scan_date.strftime('%Y%m%d_%H%M%S')}.pdf"
-#                     st.download_button(
-#                         label=f"📥 Download {hostname} Report",
-#                         data=pdf_buffer,
-#                         file_name=filename,
-#                         mime="application/pdf",
-#                         key=f"download_{target_idx}"
-#                     )
-    
-#     overall_progress.progress(1.0)
-#     overall_status.text("✅ All scans completed!")
-    
-#     if results:
-#         st.markdown("---")
-#         st.subheader("📊 Scan Summary")
-        
-#         total_results = len(results)
-#         total_compliant = len([r for r in results if r['compliance_status'] == 'Yes'])
-#         total_non_compliant = len([r for r in results if r['compliance_status'] == 'No'])
-#         high_priority_issues = len([r for r in results if r['threat_level'] == 'High' and r['compliance_status'] == 'No'])
-        
-#         col1, col2, col3, col4 = st.columns(4)
-#         with col1:
-#             st.metric("Total Checks", total_results)
-#         with col2:
-#             st.metric("Compliant", f"{total_compliant} ({total_compliant/total_results*100:.1f}%)")
-#         with col3:
-#             st.metric("Issues Found", total_non_compliant)
-#         with col4:
-#             st.metric("High Priority Issues", high_priority_issues)
-        
-#         col1, col2 = st.columns(2)
-        
-#         with col1:
-#             if st.button("📄 Generate Combined Report", type="secondary"):
-#                 pdf_buffer = generate_pdf_report(results, {
-#                     'service_type': service_type,
-#                     'ip_address': f"Multiple targets ({len(selected_targets)})",
-#                     'domain': domain or 'Multiple/N/A',
-#                     'scan_date': scan_date.strftime('%Y-%m-%d %H:%M:%S')
-#                 })
-                
-#                 st.download_button(
-#                     label="📥 Download Combined Report",
-#                     data=pdf_buffer,
-#                     file_name=f"combined_compliance_report_{scan_date.strftime('%Y%m%d_%H%M%S')}.pdf",
-#                     mime="application/pdf"
-#                 )
-        
-#         with col2:
-#             if st.button("💾 Save to Database", type="secondary"):
-#                 try:
-#                     save_to_db(results)
-#                     st.success(f"✅ {len(results)} scan results saved to database")
-#                 except Exception as e:
-#                     st.error(f"❌ Error saving to database: {str(e)}")
-        
-#         if st.button("🔄 Start New Scan", type="secondary"):
-#             for key in ['discovery_result', 'target_input', 'service_type', 'domain_input']:
-#                 if key in st.session_state:
-#                     del st.session_state[key]
-#             st.rerun()
-
 
 def run_enhanced_compliance_scan(selected_targets, service_type, domain=None):
     """Run compliance scan on selected targets with fixed PDF generation and database saving"""
