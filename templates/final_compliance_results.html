@@ -195,42 +195,58 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for result in results|sort(attribute='sr_no') %}
-                        <tr class="threat-{{ result.threat_level|lower }}">
-                            <td>{{ result.sr_no }}</td>
-                            <td>{{ result.parameter }}</td>
-                            <td>
-                                {% if result.hostname and result.hostname != 'manual' %}
-                                {{ result.hostname }}<br>
-                                <small class="text-muted">{{ result.ip_address }}</small>
-                                {% else %}
-                                {{ result.ip_address }}
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if result.compliance_status == 'Yes' %}
-                                <span class="status-yes">✅ Yes</span>
-                                {% elif result.compliance_status == 'No' %}
-                                <span class="status-no">❌ No</span>
-                                {% elif result.compliance_status == 'Error' %}
-                                <span class="status-error">⚠️ Error</span>
-                                {% elif result.compliance_status == 'N/A' %}
-                                <span class="status-na">➖ N/A</span>
-                                {% elif result.compliance_status == '-' %}
-                                <span class="status-info">ℹ️ Info</span>
-                                {% else %}
-                                <span>{{ result.compliance_status }}</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <span class="badge bg-{{ 'danger' if result.threat_level == 'High' else 'warning' if result.threat_level == 'Medium' else 'info' if result.threat_level == 'Low' else 'secondary' }}">
-                                    {{ result.threat_level }}
-                                </span>
-                            </td>
-                            <td>
-                                <small>{{ result.remarks }}</small>
-                            </td>
-                        </tr>
+                        {% set grouped = {} %}
+                        {% for result in results %}
+                            {% set key = (result.hostname if result.hostname and result.hostname != 'manual' else '') ~ '|' ~ result.ip_address %}
+                            {% if key not in grouped %}
+                                {% set _ = grouped.update({key: []}) %}
+                            {% endif %}
+                            {% set _ = grouped[key].append(result) %}
+                        {% endfor %}
+                        {% for key, group in grouped.items() %}
+                            {% set hostname, ip = key.split('|', 1) %}
+                            <tr style="background-color: #f0f4fa;">
+                                <td colspan="6">
+                                    <strong style="font-size: 1.1em;">{{ hostname if hostname else ip }}{% if hostname %} <span class='text-muted' style='font-size:0.95em;'>({{ ip }})</span>{% endif %}</strong>
+                                </td>
+                            </tr>
+                            {% for result in group|sort(attribute='sr_no') %}
+                            <tr class="threat-{{ result.threat_level|lower }}">
+                                <td>{{ result.sr_no }}</td>
+                                <td>{{ result.parameter }}</td>
+                                <td>
+                                    {% if result.hostname and result.hostname != 'manual' %}
+                                    {{ result.hostname }}<br>
+                                    <small class="text-muted">{{ result.ip_address }}</small>
+                                    {% else %}
+                                    {{ result.ip_address }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if result.compliance_status == 'Yes' %}
+                                    <span class="status-yes">✅ Yes</span>
+                                    {% elif result.compliance_status == 'No' %}
+                                    <span class="status-no">❌ No</span>
+                                    {% elif result.compliance_status == 'Error' %}
+                                    <span class="status-error">⚠️ Error</span>
+                                    {% elif result.compliance_status == 'N/A' %}
+                                    <span class="status-na">➖ N/A</span>
+                                    {% elif result.compliance_status == '-' %}
+                                    <span class="status-info">ℹ️ Info</span>
+                                    {% else %}
+                                    <span>{{ result.compliance_status }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if result.threat_level == 'High' else 'warning' if result.threat_level == 'Medium' else 'info' if result.threat_level == 'Low' else 'secondary' }}">
+                                        {{ result.threat_level }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small>{{ result.remarks }}</small>
+                                </td>
+                            </tr>
+                            {% endfor %}
                         {% endfor %}
                     </tbody>
                 </table>
