@@ -377,6 +377,15 @@
             </div>
         </div>
     </div>
+    <!-- Add action buttons for new scan and dashboard -->
+    <div class="d-flex justify-content-center gap-3 my-4">
+        <a href="{{ url_for('compliance') }}" class="btn btn-primary btn-lg">
+            🔄 Start New Scan
+        </a>
+        <a href="{{ url_for('dashboard') }}" class="btn btn-secondary btn-lg">
+            🏠 Go to Dashboard
+        </a>
+    </div>
     <a href="{{ url_for('compliance') }}" class="btn btn-fab" data-bs-toggle="tooltip" data-bs-placement="left" title="Start New Scan">
         <span>＋</span>
     </a>
