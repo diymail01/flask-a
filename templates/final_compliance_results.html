@@ -299,6 +299,14 @@
         </div>
     </div>
     {% endif %}
+    <!-- UI warning for public mail services SMTP port scan -->
+    <div class="alert alert-info" role="alert">
+        <strong>Note:</strong> Many public mail services (e.g., Gmail, Outlook) block direct SMTP connections from the public internet for security reasons. If you see 'SMTP port not open' for such services, it does not necessarily mean the service is down or misconfigured.
+    </div>
+    <!-- UI warning for public DNS services DNS port scan -->
+    <div class="alert alert-info" role="alert">
+        <strong>Note:</strong> Many public DNS services (e.g., Google DNS, Cloudflare DNS, Quad9) block or restrict direct DNS queries from the public internet for security reasons. If you see 'DNS port not open' for such services, it does not necessarily mean the service is down or misconfigured.
+    </div>
     <div class="glass-card">
         <div class="glass-header">
             <h5>📋 Detailed Compliance Results</h5>

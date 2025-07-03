@@ -733,9 +733,33 @@ def check_ftp_anonymous(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_dns_ports(ip, domain=None):
-    """Check for open ports other than DNS required ports"""
+# Helper: Detect if IP/hostname is a public DNS provider
+PUBLIC_DNS_PROVIDERS = [
+    '8.8.8.8', '8.8.4.4', '1.1.1.1', '1.0.0.1', '9.9.9.9', '149.112.112.112',
+    '208.67.222.222', '208.67.220.220', '64.6.64.6', '64.6.65.6',
+    'cloudflare-dns.com', 'google-public-dns-a.google.com', 'google-public-dns-b.google.com',
+    'opendns.com', 'quad9.net', 'verisign.com', 'comodo.com', 'norton.com', 'level3.com'
+]
+def is_public_dns_provider(ip=None, domain=None, hostname=None):
+    # Check by IP, domain, or hostname
+    if ip:
+        for provider_ip in PUBLIC_DNS_PROVIDERS:
+            if provider_ip == ip:
+                return True
+    if domain:
+        for provider in PUBLIC_DNS_PROVIDERS:
+            if provider in domain:
+                return True
+    if hostname:
+        for provider in PUBLIC_DNS_PROVIDERS:
+            if provider in hostname:
+                return True
+    return False
+
+def check_dns_ports(ip, domain=None, hostname=None):
     try:
+        if is_public_dns_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public DNS provider (DNS port not testable from public internet)"
         # Quick scan of common ports
         common_ports = list(range(1, 1001))
         open_ports = quick_port_scan(ip, common_ports)
@@ -752,9 +776,10 @@ def check_dns_ports(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_dns_version(ip, domain=None):
-    """Check if DNS version is visible"""
+def check_dns_version(ip, domain=None, hostname=None):
     try:
+        if is_public_dns_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public DNS provider (DNS port not testable from public internet)"
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
         
@@ -776,9 +801,10 @@ def check_dns_version(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_dns_recursion(ip, domain=None):
-    """Check if DNS server supports recursion"""
+def check_dns_recursion(ip, domain=None, hostname=None):
     try:
+        if is_public_dns_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public DNS provider (DNS port not testable from public internet)"
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
         
@@ -803,20 +829,19 @@ def check_dns_recursion(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_dns_randomization(ip, domain=None):
-    """Check DNS port and transaction ID randomization"""
+def check_dns_randomization(ip, domain=None, hostname=None):
     try:
-        if not quick_port_scan(ip, [53]):
-            return "N/A", "DNS port not open"
-        
+        if is_public_dns_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public DNS provider (DNS port not testable from public internet)"
         # This is a simplified check - full randomization test requires multiple queries
         return "N/A", "DNS randomization check requires specialized tools (use dns-oarc.net porttest)"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_dnssec(ip, domain=None):
-    """Check if DNSSEC is implemented"""
+def check_dnssec(ip, domain=None, hostname=None):
     try:
+        if is_public_dns_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public DNS provider (DNS port not testable from public internet)"
         if not domain:
             return "N/A", "Domain required for DNSSEC check"
         
@@ -841,9 +866,10 @@ def check_dnssec(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_dnssec_rsa256(ip, domain=None):
-    """Check if DNSSEC uses RSA256"""
+def check_dnssec_rsa256(ip, domain=None, hostname=None):
     try:
+        if is_public_dns_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public DNS provider (DNS port not testable from public internet)"
         if not domain:
             return "N/A", "Domain required for DNSSEC RSA256 check"
         
@@ -1002,9 +1028,29 @@ def check_zone_transfer(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_email_relay(ip, domain=None):
+# Helper: Detect if IP/hostname is a public mail provider
+PUBLIC_MAIL_PROVIDERS = [
+    'gmail.com', 'google.com', 'outlook.com', 'hotmail.com', 'yahoo.com', 'yandex.com', 'zoho.com',
+    'protonmail.com', 'icloud.com', 'aol.com', 'mail.com', 'gmx.com', 'qq.com', '163.com', '126.com'
+]
+def is_public_mail_provider(ip=None, domain=None, hostname=None):
+    # Check by domain or hostname
+    if domain:
+        for provider in PUBLIC_MAIL_PROVIDERS:
+            if provider in domain:
+                return True
+    if hostname:
+        for provider in PUBLIC_MAIL_PROVIDERS:
+            if provider in hostname:
+                return True
+    # Optionally, check by IP (skip for now, as public IP ranges are large)
+    return False
+
+def check_email_relay(ip, domain=None, hostname=None):
     """Check if email server acts as open relay"""
     try:
+        if is_public_mail_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public mail provider (SMTP port not testable from public internet)"
         if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
         
@@ -1061,9 +1107,11 @@ def reliable_smtp_port_check(ip):
             return True
     return False
 
-def check_mta_version(ip, domain=None):
+def check_mta_version(ip, domain=None, hostname=None):
     """Check if MTA version is visible"""
     try:
+        if is_public_mail_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public mail provider (SMTP port not testable from public internet)"
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         
@@ -1105,14 +1153,16 @@ def check_mta_version(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_mta_old_version(ip, domain=None):
+def check_mta_old_version(ip, domain=None, hostname=None):
     """Check if MTA is using old/discontinued version"""
     try:
+        if is_public_mail_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public mail provider (SMTP port not testable from public internet)"
         if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
         
         # Get version info first
-        status, details = check_mta_version(ip, domain)
+        status, details = check_mta_version(ip, domain, hostname)
         
         if status == "No" and "version visible" in details:
             # Extract version info
@@ -1138,9 +1188,11 @@ def check_mta_old_version(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_mta_tls(ip, domain=None):
+def check_mta_tls(ip, domain=None, hostname=None):
     """Check if MTA supports TLS"""
     try:
+        if is_public_mail_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public mail provider (SMTP port not testable from public internet)"
         if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
         
@@ -1163,9 +1215,11 @@ def check_mta_tls(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_smtp_auth(ip, domain=None):
+def check_smtp_auth(ip, domain=None, hostname=None):
     """Check if SMTP AUTH is disabled on MX server"""
     try:
+        if is_public_mail_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public mail provider (SMTP port not testable from public internet)"
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         
@@ -1190,9 +1244,11 @@ def check_smtp_auth(ip, domain=None):
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
-def check_user_enumeration(ip, domain=None):
+def check_user_enumeration(ip, domain=None, hostname=None):
     """Check if user enumeration via VRFY is disabled"""
     try:
+        if is_public_mail_provider(ip=ip, domain=domain, hostname=hostname):
+            return "N/A", "Public mail provider (SMTP port not testable from public internet)"
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
         
