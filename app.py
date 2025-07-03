@@ -680,11 +680,10 @@ def reports():
     import sqlite3
     import pandas as pd
     conn = sqlite3.connect('compliance_results.db')
-    # Group by scan_date, ip_address, service_type, domain, hostname
+    # Get unique scans by id, service_type, ip_address, domain, and scan_date
     scans_query = '''
-        SELECT MIN(id) as id, scan_date, ip_address, service_type, domain, hostname
+        SELECT id, service_type, ip_address, domain, scan_date
         FROM compliance_results
-        GROUP BY scan_date, ip_address, service_type, domain, hostname
         ORDER BY scan_date DESC
     '''
     scans_df = pd.read_sql_query(scans_query, conn)
@@ -865,20 +864,21 @@ def quick_report(report_type):
 
 @app.route('/download_report')
 def download_report():
-    scan_date = request.args.get('scan_date')
-    ip_address = request.args.get('ip_address')
-    service_type = request.args.get('service_type')
-    if scan_date and ip_address and service_type:
+    scan_id = request.args.get('scan_id')
+    if scan_id:
         import sqlite3
         conn = sqlite3.connect('compliance_results.db')
-        scan_query = '''SELECT * FROM compliance_results WHERE scan_date = ? AND ip_address = ? AND service_type = ?'''
-        scan_rows = conn.execute(scan_query, (scan_date, ip_address, service_type)).fetchall()
-        columns = [desc[0] for desc in conn.execute(scan_query, (scan_date, ip_address, service_type)).description]
+        # Get all rows for this scan id
+        scan_query = 'SELECT * FROM compliance_results WHERE id = ?'
+        scan_rows = conn.execute(scan_query, (scan_id,)).fetchall()
+        columns = [desc[0] for desc in conn.execute(scan_query, (scan_id,)).description]
         conn.close()
         if not scan_rows:
-            flash('No scan found with the specified parameters.', 'error')
+            flash('No scan found with the specified ID.', 'error')
             return redirect(url_for('reports'))
+        # Convert to list of dicts
         results = [dict(zip(columns, row)) for row in scan_rows]
+        # Compose scan_info for the PDF summary
         scan_info = {
             'service_type': results[0].get('service_type', 'N/A'),
             'ip_address': results[0].get('ip_address', ''),

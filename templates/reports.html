@@ -311,7 +311,7 @@
                             <td>{{ scan.ip_address }}{% if scan.domain %} / {{ scan.domain }}{% endif %}</td>
                             <td>{{ scan.scan_date }}</td>
                             <td>
-                                <a href="{{ url_for('download_report', scan_date=scan.scan_date, ip_address=scan.ip_address, service_type=scan.service_type) }}" class="btn btn-primary btn-sm">Download</a>
+                                <a href="{{ url_for('download_report', scan_id=scan.id) }}" class="btn btn-primary btn-sm">Download</a>
                             </td>
                         </tr>
                         {% endfor %}
