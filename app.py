@@ -680,10 +680,11 @@ def reports():
     import sqlite3
     import pandas as pd
     conn = sqlite3.connect('compliance_results.db')
-    # Get unique scans by id, service_type, ip_address, domain, and scan_date
+    # Group by scan_date, ip_address, service_type, domain, hostname
     scans_query = '''
-        SELECT id, service_type, ip_address, domain, scan_date
+        SELECT MIN(id) as id, scan_date, ip_address, service_type, domain, hostname
         FROM compliance_results
+        GROUP BY scan_date, ip_address, service_type, domain, hostname
         ORDER BY scan_date DESC
     '''
     scans_df = pd.read_sql_query(scans_query, conn)
