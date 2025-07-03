@@ -677,7 +677,20 @@ def dashboard():
 
 @app.route('/reports')
 def reports():
-    return render_template('reports.html')
+    import sqlite3
+    import pandas as pd
+    conn = sqlite3.connect('compliance_results.db')
+    # Group by scan_date, ip_address, service_type, domain, hostname
+    scans_query = '''
+        SELECT MIN(id) as id, scan_date, ip_address, service_type, domain, hostname
+        FROM compliance_results
+        GROUP BY scan_date, ip_address, service_type, domain, hostname
+        ORDER BY scan_date DESC
+    '''
+    scans_df = pd.read_sql_query(scans_query, conn)
+    conn.close()
+    scans = scans_df.to_dict('records')
+    return render_template('reports.html', scans=scans)
 
 @app.route('/reports', methods=['POST'])
 def generate_report():
@@ -852,12 +865,40 @@ def quick_report(report_type):
 
 @app.route('/download_report')
 def download_report():
+    scan_date = request.args.get('scan_date')
+    ip_address = request.args.get('ip_address')
+    service_type = request.args.get('service_type')
+    if scan_date and ip_address and service_type:
+        import sqlite3
+        conn = sqlite3.connect('compliance_results.db')
+        scan_query = '''SELECT * FROM compliance_results WHERE scan_date = ? AND ip_address = ? AND service_type = ?'''
+        scan_rows = conn.execute(scan_query, (scan_date, ip_address, service_type)).fetchall()
+        columns = [desc[0] for desc in conn.execute(scan_query, (scan_date, ip_address, service_type)).description]
+        conn.close()
+        if not scan_rows:
+            flash('No scan found with the specified parameters.', 'error')
+            return redirect(url_for('reports'))
+        results = [dict(zip(columns, row)) for row in scan_rows]
+        scan_info = {
+            'service_type': results[0].get('service_type', 'N/A'),
+            'ip_address': results[0].get('ip_address', ''),
+            'scan_date': results[0].get('scan_date', ''),
+            'domain': results[0].get('domain', ''),
+            'hostname': results[0].get('hostname', '')
+        }
+        pdf_buffer = generate_pdf_report(results, scan_info)
+        return send_file(
+            pdf_buffer,
+            as_attachment=True,
+            download_name=f"compliance_report_{scan_info['service_type'].replace('/', '_')}_{scan_info['scan_date']}.pdf",
+            mimetype='application/pdf'
+        )
+    # Fallback to old session-based download
     if 'scan_results' not in session or 'compliance_data' not in session:
         flash('No scan results found. Please run a scan first.', 'error')
         return redirect(url_for('compliance'))
     results = session['scan_results']
     compliance_data = session['compliance_data']
-    # Compose scan_info for the PDF summary
     scan_info = {
         'service_type': compliance_data.get('service_type', 'N/A'),
         'ip_address': ', '.join(sorted(set(r.get('ip_address', '') for r in results))),

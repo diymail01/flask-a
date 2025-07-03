@@ -55,6 +55,10 @@
             font-weight: 700;
             font-size: 1.15rem;
             border-bottom: 1px solid #e3e9f7;
+            color: #23272f !important;
+        }
+        .glass-header h5 {
+            color: #23272f !important;
         }
         .btn {
             border-radius: 24px;
@@ -85,7 +89,7 @@
             background: linear-gradient(90deg, #1f4788 60%, #3a7bd5 100%);
         }
         .table thead th {
-            color: #fff;
+            color: #23272f !important;
             font-weight: 700;
             border: none;
         }
@@ -278,6 +282,45 @@
                     </small>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- New section: All Scans Table -->
+    <div class="glass-card mt-5">
+        <div class="glass-header">
+            <h5>🗂️ All Saved Scans</h5>
+        </div>
+        <div class="card-body">
+            {% if scans and scans|length > 0 %}
+            <div class="table-responsive">
+                <table class="table table-striped table-hover align-middle">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Scan Type</th>
+                            <th>IP/DNS Address</th>
+                            <th>Scan Date</th>
+                            <th>Download</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for scan in scans %}
+                        <tr>
+                            <td>{{ scan.id }}</td>
+                            <td>{{ scan.service_type }}</td>
+                            <td>{{ scan.ip_address }}{% if scan.domain %} / {{ scan.domain }}{% endif %}</td>
+                            <td>{{ scan.scan_date }}</td>
+                            <td>
+                                <a href="{{ url_for('download_report', scan_date=scan.scan_date, ip_address=scan.ip_address, service_type=scan.service_type) }}" class="btn btn-primary btn-sm">Download</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No scans found in the database.</p>
+            {% endif %}
         </div>
     </div>
 </div>
