@@ -48,6 +48,9 @@ def init_db():
         if 'target_type' not in columns:
             c.execute('ALTER TABLE compliance_results ADD COLUMN target_type TEXT')
         
+        if 'scan_session_uid' not in columns:
+            c.execute('ALTER TABLE compliance_results ADD COLUMN scan_session_uid TEXT')
+        
         conn.commit()
         conn.close()
         return True
@@ -1632,7 +1635,8 @@ def save_to_db(results):
                       remarks TEXT,
                       command_used TEXT,
                       hostname TEXT,
-                      target_type TEXT)''')
+                      target_type TEXT,
+                      scan_session_uid TEXT)''')
         
         # Check if table needs column updates
         cursor = c.execute("PRAGMA table_info(compliance_results)")
@@ -1640,7 +1644,7 @@ def save_to_db(results):
         
         # Add missing columns if needed
         missing_columns = []
-        required_columns = ['hostname', 'target_type', 'domain']
+        required_columns = ['hostname', 'target_type', 'domain', 'scan_session_uid']
         
         for col in required_columns:
             if col not in columns:
@@ -1707,7 +1711,8 @@ def save_to_db(results):
                     clean_value(result.get('remarks')),
                     clean_value(result.get('command_used')),
                     clean_value(result.get('hostname')),
-                    clean_value(result.get('target_type'))
+                    clean_value(result.get('target_type')),
+                    clean_value(result.get('scan_session_uid'))
                 )
                 
                 # Validate required fields
@@ -1717,8 +1722,8 @@ def save_to_db(results):
                 
                 c.execute('''INSERT INTO compliance_results 
                              (scan_date, service_type, ip_address, domain, sr_no, parameter, 
-                              compliance_status, threat_level, remarks, command_used, hostname, target_type)
-                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data)
+                              compliance_status, threat_level, remarks, command_used, hostname, target_type, scan_session_uid)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''', data)
                 
                 saved_count += 1
                 

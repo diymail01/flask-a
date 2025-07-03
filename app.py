@@ -5,6 +5,8 @@ import datetime
 import sqlite3
 import pandas as pd
 from demo import generate_pdf_report
+import uuid
+from markupsafe import escape
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -570,7 +572,11 @@ def run_compliance_scan():
         saved_count = 0
         if results:
             try:
+                scan_session_uid = str(uuid.uuid4())
+                for r in results:
+                    r['scan_session_uid'] = scan_session_uid
                 saved_count = save_to_db(results)
+                session['scan_session_uid'] = scan_session_uid
                 print(f"DEBUG: Saved {saved_count} results to database")
             except Exception as e:
                 print(f"DEBUG: Database save failed: {str(e)}")
@@ -680,11 +686,10 @@ def reports():
     import sqlite3
     import pandas as pd
     conn = sqlite3.connect('compliance_results.db')
-    # Group by scan_date, ip_address, service_type, domain, hostname
     scans_query = '''
-        SELECT MIN(id) as id, scan_date, ip_address, service_type, domain, hostname
+        SELECT MIN(id) as id, scan_session_uid, scan_date, ip_address, service_type, domain, hostname
         FROM compliance_results
-        GROUP BY scan_date, ip_address, service_type, domain, hostname
+        GROUP BY scan_session_uid
         ORDER BY scan_date DESC
     '''
     scans_df = pd.read_sql_query(scans_query, conn)
@@ -695,59 +700,60 @@ def reports():
 @app.route('/reports', methods=['POST'])
 def generate_report():
     try:
-        report_type = request.form.get('report_type')
-        output_format = request.form.get('format')
-        date_from = request.form.get('date_from')
-        date_to = request.form.get('date_to')
-        service_type = request.form.get('service_type')
-        compliance_status = request.form.get('compliance_status')
-        threat_level = request.form.get('threat_level')
-        ip_address = request.form.get('ip_address')
-        
+        # Sanitize and validate input
+        report_type = escape(request.form.get('report_type', '').strip())
+        output_format = escape(request.form.get('format', '').strip())
+        date_from = escape(request.form.get('date_from', '').strip())
+        date_to = escape(request.form.get('date_to', '').strip())
+        service_type = escape(request.form.get('service_type', '').strip())
+        compliance_status = escape(request.form.get('compliance_status', '').strip())
+        threat_level = escape(request.form.get('threat_level', '').strip())
+        ip_address = escape(request.form.get('ip_address', '').strip())
+
+        # Required fields
+        if not report_type or not output_format:
+            flash('Report type and output format are required.', 'error')
+            return redirect(url_for('reports'))
+        if output_format not in ['html', 'csv', 'json']:
+            flash('Invalid output format.', 'error')
+            return redirect(url_for('reports'))
+        if report_type not in ['summary', 'detailed', 'compliance', 'issues']:
+            flash('Invalid report type.', 'error')
+            return redirect(url_for('reports'))
+
         # Build query
         query = "SELECT * FROM compliance_results WHERE 1=1"
         params = []
-        
         if date_from:
             query += " AND DATE(scan_date) >= ?"
             params.append(date_from)
-        
         if date_to:
             query += " AND DATE(scan_date) <= ?"
             params.append(date_to)
-        
         if service_type:
             query += " AND service_type = ?"
             params.append(service_type)
-        
         if compliance_status:
             query += " AND compliance_status = ?"
             params.append(compliance_status)
-        
         if threat_level:
             query += " AND threat_level = ?"
             params.append(threat_level)
-        
         if ip_address:
             query += " AND ip_address = ?"
             params.append(ip_address)
-        
         # Apply report type filters
         if report_type == 'issues':
             query += " AND (compliance_status = 'No' OR compliance_status = 'Error')"
         elif report_type == 'compliance':
             query += " AND compliance_status IN ('Yes', 'No')"
-        
         query += " ORDER BY scan_date DESC"
-        
         conn = sqlite3.connect('compliance_results.db')
         df = pd.read_sql_query(query, conn, params=params)
         conn.close()
-        
         if df.empty:
             flash('No data found matching your criteria.', 'warning')
             return redirect(url_for('reports'))
-        
         # Generate report based on format
         if output_format == 'csv':
             csv_data = df.to_csv(index=False)
@@ -777,7 +783,6 @@ def generate_report():
                                  },
                                  generated_time=datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             )
-    
     except Exception as e:
         flash(f'Error generating report: {str(e)}', 'error')
         return redirect(url_for('reports'))
@@ -863,23 +868,25 @@ def quick_report(report_type):
         flash(f'Error generating quick report: {str(e)}', 'error')
         return redirect(url_for('reports'))
 
+def clear_scan_session():
+    session.pop('scan_results', None)
+    session.pop('compliance_data', None)
+    session.pop('scan_session_uid', None)
+
 @app.route('/download_report')
 def download_report():
-    scan_id = request.args.get('scan_id')
-    if scan_id:
+    scan_session_uid = request.args.get('scan_session_uid')
+    if scan_session_uid:
         import sqlite3
         conn = sqlite3.connect('compliance_results.db')
-        # Get all rows for this scan id
-        scan_query = 'SELECT * FROM compliance_results WHERE id = ?'
-        scan_rows = conn.execute(scan_query, (scan_id,)).fetchall()
-        columns = [desc[0] for desc in conn.execute(scan_query, (scan_id,)).description]
+        scan_query = '''SELECT * FROM compliance_results WHERE scan_session_uid = ?'''
+        scan_rows = conn.execute(scan_query, (scan_session_uid,)).fetchall()
+        columns = [desc[0] for desc in conn.execute(scan_query, (scan_session_uid,)).description]
         conn.close()
         if not scan_rows:
-            flash('No scan found with the specified ID.', 'error')
+            flash('No scan found with the specified parameters.', 'error')
             return redirect(url_for('reports'))
-        # Convert to list of dicts
         results = [dict(zip(columns, row)) for row in scan_rows]
-        # Compose scan_info for the PDF summary
         scan_info = {
             'service_type': results[0].get('service_type', 'N/A'),
             'ip_address': results[0].get('ip_address', ''),
@@ -888,6 +895,7 @@ def download_report():
             'hostname': results[0].get('hostname', '')
         }
         pdf_buffer = generate_pdf_report(results, scan_info)
+        clear_scan_session()
         return send_file(
             pdf_buffer,
             as_attachment=True,
@@ -908,6 +916,7 @@ def download_report():
         'hostname': ', '.join(sorted(set(r.get('hostname', '') for r in results if r.get('hostname', '') != 'manual')))
     }
     pdf_buffer = generate_pdf_report(results, scan_info)
+    clear_scan_session()
     return send_file(
         pdf_buffer,
         as_attachment=True,

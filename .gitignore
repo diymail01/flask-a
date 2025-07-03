@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+
+# macOS
+.DS_Store
+
+# SQLite database
+compliance_results.db
+
+# VSCode
+.vscode/
+
+# Byte-compiled / optimized / DLL files
+*.py[cod]
+
+# Test output
+htmlcov/
+.coverage
+
+# Docker
+*.pid 
