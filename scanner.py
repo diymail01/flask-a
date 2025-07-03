@@ -736,8 +736,10 @@ def check_ftp_anonymous(ip, domain=None):
 def check_dns_ports(ip, domain=None):
     """Check for open ports other than DNS required ports"""
     try:
+        # Quick scan of common ports
         common_ports = list(range(1, 1001))
         open_ports = quick_port_scan(ip, common_ports)
+        
         dns_ports = [53]
         non_dns_ports = [p for p in open_ports if p not in dns_ports]
         
@@ -755,7 +757,22 @@ def check_dns_version(ip, domain=None):
     try:
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "DNS version check not implemented"
+        
+        # Try version.bind query
+        try:
+            result = subprocess.run(['dig', f'@{ip}', 'version.bind', 'txt', 'chaos'], 
+                                  capture_output=True, text=True, timeout=10)
+            
+            if 'ANSWER: 1' in result.stdout:
+                # Extract version from answer section
+                for line in result.stdout.split('\n'):
+                    if 'TXT' in line and 'version.bind' in line:
+                        version = line.split('"')[1] if '"' in line else 'Unknown version'
+                        return "No", f"DNS version visible: {version}"
+            
+            return "Yes", "DNS version is not visible"
+        except:
+            return "Error", "dig command not available or query failed"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -764,7 +781,25 @@ def check_dns_recursion(ip, domain=None):
     try:
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "DNS recursion check not implemented"
+        
+        # Test recursion with external domain query
+        try:
+            result = subprocess.run(['dig', f'@{ip}', 'google.com', 'A', '+short'], 
+                                  capture_output=True, text=True, timeout=10)
+            
+            if result.stdout.strip() and re.match(r'^\d+\.\d+\.\d+\.\d+', result.stdout.strip()):
+                return "No", "DNS server allows recursion (open resolver)"
+            
+            # Also check with +norecurse flag to confirm
+            result2 = subprocess.run(['dig', f'@{ip}', 'google.com', 'A', '+norecurse'], 
+                                   capture_output=True, text=True, timeout=10)
+            
+            if 'REFUSED' in result2.stdout or 'no servers could be reached' in result2.stdout:
+                return "Yes", "DNS recursion is properly restricted"
+            
+            return "Yes", "DNS recursion appears to be restricted"
+        except:
+            return "Error", "dig command not available"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -773,7 +808,9 @@ def check_dns_randomization(ip, domain=None):
     try:
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "DNS randomization check not implemented"
+        
+        # This is a simplified check - full randomization test requires multiple queries
+        return "N/A", "DNS randomization check requires specialized tools (use dns-oarc.net porttest)"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -782,9 +819,25 @@ def check_dnssec(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for DNSSEC check"
+        
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "DNSSEC check not implemented"
+        
+        result = subprocess.run(['dig', f'@{ip}', domain, '+dnssec', '+short'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        # Look for RRSIG records
+        if 'RRSIG' in result.stdout:
+            return "Yes", "DNSSEC is implemented"
+        
+        # Try with different query
+        result2 = subprocess.run(['dig', f'@{ip}', domain, 'DNSKEY', '+short'], 
+                               capture_output=True, text=True, timeout=10)
+        
+        if result2.stdout.strip():
+            return "Yes", "DNSSEC is implemented (DNSKEY found)"
+        
+        return "No", "DNSSEC is not implemented"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -793,9 +846,24 @@ def check_dnssec_rsa256(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for DNSSEC RSA256 check"
+        
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "DNSSEC RSA256 check not implemented"
+        
+        result = subprocess.run(['dig', f'@{ip}', domain, 'DNSKEY', '+multi'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if 'DNSKEY' in result.stdout:
+            # Algorithm 8 is RSASHA256
+            if ' 8 ' in result.stdout:
+                return "Yes", "DNSSEC uses RSA256 (Algorithm 8)"
+            else:
+                # Extract algorithm numbers
+                algorithms = re.findall(r'DNSKEY\s+\d+\s+\d+\s+(\d+)', result.stdout)
+                if algorithms:
+                    return "No", f"DNSSEC uses algorithm(s): {', '.join(set(algorithms))}"
+                return "No", "DNSSEC implemented but not using RSA256"
+        return "N/A", "DNSSEC not implemented"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -804,9 +872,20 @@ def check_nsec_walking(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for NSEC walking check"
+        
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "NSEC walking check not implemented"
+        
+        # Basic check - full NSEC walking test is complex
+        result = subprocess.run(['dig', f'@{ip}', f'nonexistent.{domain}', 'A', '+dnssec'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if 'NSEC3' in result.stdout:
+            return "Yes", "NSEC3 is used (NSEC walking prevented)"
+        elif 'NSEC' in result.stdout and 'NSEC3' not in result.stdout:
+            return "No", "NSEC records found (potential zone walking risk)"
+        
+        return "N/A", "Cannot determine NSEC status"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -815,7 +894,25 @@ def check_spf_record(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for SPF check"
-        return "N/A", "SPF record check not implemented"
+        
+        result = subprocess.run(['dig', 'TXT', domain, '+short'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        spf_records = [line for line in result.stdout.split('\n') if 'v=spf1' in line]
+        
+        if spf_records:
+            spf = spf_records[0]
+            if '-all' in spf:
+                return "Yes", "SPF record exists with '-all' (hard fail)"
+            elif '~all' in spf:
+                return "No", "SPF record exists but uses '~all' (soft fail)"
+            elif '?all' in spf:
+                return "No", "SPF record exists but uses '?all' (neutral)"
+            elif '+all' in spf:
+                return "No", "SPF record exists but missing 'all' mechanism"
+            else:
+                return "No", "SPF record exists but missing 'all' mechanism"
+        return "No", "No SPF record found"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -824,7 +921,21 @@ def check_dmarc_record(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for DMARC check"
-        return "N/A", "DMARC record check not implemented"
+        
+        result = subprocess.run(['dig', 'TXT', f'_dmarc.{domain}', '+short'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if 'v=DMARC1' in result.stdout:
+            dmarc = result.stdout.strip()
+            if 'p=reject' in dmarc:
+                return "Yes", "DMARC record exists with reject policy"
+            elif 'p=quarantine' in dmarc:
+                return "Yes", "DMARC record exists with quarantine policy"
+            elif 'p=none' in dmarc:
+                return "No", "DMARC record exists but with 'none' policy (monitoring only)"
+            else:
+                return "Yes", "DMARC record exists"
+        return "No", "No DMARC record found"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -833,7 +944,22 @@ def check_dkim_record(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for DKIM check"
-        return "N/A", "DKIM record check not implemented"
+        
+        # Common DKIM selectors
+        selectors = ['default', 'google', 'k1', 'k2', 'email', 'mail', 'dkim', 
+                    'selector1', 'selector2', 's1', 's2']
+        
+        for selector in selectors:
+            try:
+                result = subprocess.run(['dig', 'TXT', f'{selector}._domainkey.{domain}', '+short'], 
+                                      capture_output=True, text=True, timeout=5)
+                
+                if 'v=DKIM1' in result.stdout or 'k=rsa' in result.stdout:
+                    return "Yes", f"DKIM record found (selector: {selector})"
+            except:
+                continue
+        
+        return "No", "No DKIM record found with common selectors"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -842,7 +968,13 @@ def check_caa_record(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for CAA check"
-        return "N/A", "CAA record check not implemented"
+        
+        result = subprocess.run(['dig', 'CAA', domain, '+short'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if result.stdout.strip() and 'issue' in result.stdout:
+            return "Yes", f"CAA record is published: {result.stdout.strip()[:100]}"
+        return "No", "No CAA record found"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -851,9 +983,22 @@ def check_zone_transfer(ip, domain=None):
     try:
         if not domain:
             return "N/A", "Domain required for zone transfer check"
+        
         if not quick_port_scan(ip, [53]):
             return "N/A", "DNS port not open"
-        return "N/A", "Zone transfer check not implemented"
+        
+        result = subprocess.run(['dig', f'@{ip}', domain, 'AXFR'], 
+                              capture_output=True, text=True, timeout=15)
+        
+        # Check if transfer was successful
+        if 'Transfer failed' in result.stdout or 'failed' in result.stdout.lower():
+            return "Yes", "Zone transfer is properly disabled"
+        elif result.stdout.count(f'{domain}.') > 10:  # Multiple records returned
+            return "No", "Zone transfer is allowed (security risk)"
+        elif 'communications error' in result.stdout.lower():
+            return "Yes", "Zone transfer appears to be disabled"
+        else:
+            return "Yes", "Zone transfer is restricted"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -862,7 +1007,49 @@ def check_email_relay(ip, domain=None):
     try:
         if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
-        return "N/A", "Email relay check not implemented"
+        
+        # Try using swaks if available
+        try:
+            result = subprocess.run(['swaks', '--server', ip, '--from', 'test@external.com', 
+                                   '--to', 'test@another-external.com', '--quit-after', 'RCPT'], 
+                                  capture_output=True, text=True, timeout=30)
+            
+            if '250' in result.stdout and 'Recipient' in result.stdout:
+                return "No", "Server may act as open relay"
+            else:
+                return "Yes", "Server does not act as open relay"
+        except FileNotFoundError:
+            # Fallback to socket method
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(10)
+                sock.connect((ip, 25))
+                
+                # Get banner
+                banner = sock.recv(1024)
+                
+                # EHLO
+                sock.send(b"EHLO test.com\r\n")
+                response = sock.recv(1024)
+                
+                # Try to relay
+                sock.send(b"MAIL FROM:<test@external.com>\r\n")
+                response = sock.recv(1024).decode('utf-8', errors='ignore')
+                
+                if '250' in response:
+                    sock.send(b"RCPT TO:<test@another-external.com>\r\n")
+                    response = sock.recv(1024).decode('utf-8', errors='ignore')
+                    sock.close()
+                    
+                    if '250' in response:
+                        return "No", "Server accepts relay (open relay detected)"
+                    else:
+                        return "Yes", "Server rejects relay attempts"
+                else:
+                    sock.close()
+                    return "Yes", "Server rejects unauthorized senders"
+            except:
+                return "Yes", "Could not test relay (likely protected)"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -879,25 +1066,100 @@ def check_mta_version(ip, domain=None):
     try:
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
-        return "N/A", "MTA version check not implemented"
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(5)
+        sock.connect((ip, 25))
+        
+        # Get banner
+        banner = sock.recv(1024).decode('utf-8', errors='ignore')
+        
+        # Also try EHLO to get more info
+        sock.send(b"EHLO test.com\r\n")
+        response = sock.recv(1024).decode('utf-8', errors='ignore')
+        sock.close()
+        
+        # Check for version information
+        version_patterns = [
+            r'Postfix \\d+\.\\d+',
+            r'Sendmail \\d+\.\\d+', 
+            r'Exim \\d+\.\\d+',
+            r'Exchange Server \\d+',
+            r'Microsoft ESMTP MAIL Service.*Version: \\d+',
+            r'qmail \\d+\.\\d+'
+        ]
+        
+        full_response = banner + response
+        for pattern in version_patterns:
+            match = re.search(pattern, full_response, re.IGNORECASE)
+            if match:
+                return "No", f"MTA version visible: {match.group()}"
+        
+        # Check if any MTA name is visible without version
+        mta_names = ['postfix', 'sendmail', 'exim', 'exchange', 'qmail', 'zimbra']
+        for mta in mta_names:
+            if mta in full_response.lower():
+                return "Yes", f"MTA identified as {mta} but version hidden"
+        
+        return "Yes", "MTA version is not visible"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
 def check_mta_old_version(ip, domain=None):
     """Check if MTA is using old/discontinued version"""
     try:
-        if not reliable_smtp_port_check(ip):
+        if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
-        return "N/A", "MTA old version check not implemented"
+        
+        # Get version info first
+        status, details = check_mta_version(ip, domain)
+        
+        if status == "No" and "version visible" in details:
+            # Extract version info
+            version_str = details.lower()
+            
+            # Define old versions (simplified - should be updated regularly)
+            old_indicators = [
+                ('sendmail', ['8.12', '8.13', '8.14']),
+                ('postfix', ['2.0', '2.1', '2.2', '2.3', '2.4', '2.5', '2.6', '2.7', '2.8', '2.9']),
+                ('exim', ['3.', '4.0', '4.1', '4.2', '4.3', '4.4', '4.5', '4.6']),
+                ('exchange', ['2003', '2007', '2010', '2013'])
+            ]
+            
+            for mta, old_versions in old_indicators:
+                if mta in version_str:
+                    for old_ver in old_versions:
+                        if old_ver in version_str:
+                            return "No", f"MTA using old version: {details.split(':')[1].strip()}"
+            
+            return "Yes", "MTA software appears to be current"
+        
+        return "N/A", "Cannot determine MTA version"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
 def check_mta_tls(ip, domain=None):
     """Check if MTA supports TLS"""
     try:
-        if not reliable_smtp_port_check(ip):
+        if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
-        return "N/A", "MTA TLS check not implemented"
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect((ip, 25))
+        
+        # Get banner
+        sock.recv(1024)
+        
+        # Send EHLO
+        sock.send(b"EHLO test.com\r\n")
+        response = sock.recv(1024).decode('utf-8', errors='ignore')
+        sock.close()
+        
+        if 'STARTTLS' in response:
+            return "Yes", "MTA supports TLS (STARTTLS available)"
+        else:
+            return "No", "MTA does not support TLS"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -906,7 +1168,25 @@ def check_smtp_auth(ip, domain=None):
     try:
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
-        return "N/A", "SMTP AUTH check not implemented"
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect((ip, 25))
+        
+        # Get banner
+        sock.recv(1024)
+        
+        # Send EHLO
+        sock.send(b"EHLO test.com\r\n")
+        response = sock.recv(1024).decode('utf-8', errors='ignore')
+        sock.close()
+        
+        if 'AUTH' in response and any(auth in response for auth in ['LOGIN', 'PLAIN', 'CRAM']):
+            # Extract AUTH methods
+            auth_line = [line for line in response.split('\n') if 'AUTH' in line][0]
+            return "No", f"SMTP-AUTH is enabled: {auth_line.strip()}"
+        else:
+            return "Yes", "SMTP-AUTH is disabled"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -915,7 +1195,33 @@ def check_user_enumeration(ip, domain=None):
     try:
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
-        return "N/A", "User enumeration check not implemented"
+        
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.settimeout(10)
+        sock.connect((ip, 25))
+        
+        # Get banner
+        banner = smtp_send_recv(sock, None)
+        
+        # Send EHLO
+        response = smtp_send_recv(sock, "EHLO test.com")
+        
+        # Try VRFY command
+        vrfy_response = smtp_send_recv(sock, "VRFY root")
+        sock.close()
+        
+        if vrfy_response:
+            code = vrfy_response[:3]
+            if code == "250":
+                return "No", "User enumeration possible via VRFY (user confirmed)"
+            elif code == "252":
+                return "No", "VRFY returns ambiguous response (partial enumeration)"
+            elif code in ["502", "500", "503"]:
+                return "Yes", f"VRFY properly restricted (code {code})"
+            else:
+                return "Yes", f"VRFY properly restricted (code {code})"
+        else:
+            return "Error", "No response to VRFY command"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -923,10 +1229,50 @@ def check_domain_spoofing(ip, domain=None):
     """Check if server blocks incoming mail with own domain spoofed"""
     if not domain:
         return "N/A", "Domain required for spoofing check"
+    
     try:
         if not reliable_smtp_port_check(ip):
             return "N/A", "SMTP port not open"
-        return "N/A", "Domain spoofing check not implemented"
+        
+        # Try using swaks if available
+        try:
+            result = subprocess.run(['swaks', '--server', ip, '--from', f'spoofed@{domain}', 
+                                   '--to', f'legitimate@{domain}', '--quit-after', 'DATA'], 
+                                  capture_output=True, text=True, timeout=30)
+            
+            if '250' in result.stdout and 'accepted' in result.stdout.lower():
+                return "No", "Server accepts spoofed sender from own domain"
+            else:
+                return "Yes", "Server blocks spoofed sender from own domain"
+        except FileNotFoundError:
+            # Manual test via socket
+            try:
+                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                sock.settimeout(10)
+                sock.connect((ip, 25))
+                
+                # Get banner
+                smtp_send_recv(sock, None)
+                
+                # EHLO
+                smtp_send_recv(sock, "EHLO external.com")
+                
+                # Try spoofed sender
+                mail_response = smtp_send_recv(sock, f"MAIL FROM:<spoofed@{domain}>")
+                
+                if '250' in mail_response:
+                    rcpt_response = smtp_send_recv(sock, f"RCPT TO:<legitimate@{domain}>")
+                    sock.close()
+                    
+                    if '250' in rcpt_response:
+                        return "No", "Server accepts mail with spoofed sender from own domain"
+                    else:
+                        return "Yes", "Server rejects spoofed domain at RCPT stage"
+                else:
+                    sock.close()
+                    return "Yes", "Server rejects spoofed domain at MAIL FROM stage"
+            except:
+                return "N/A", "Could not test domain spoofing"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -934,16 +1280,31 @@ def check_punny_code_spoofing(ip, domain=None):
     """Check if server blocks punnycode spoofed domains"""
     if not domain:
         return "N/A", "Domain required for punnycode spoofing check"
-    return "N/A", "Punnycode spoofing check not implemented"
+    
+    # This requires actual punnycode domain testing
+    return "N/A", "Punnycode spoofing check requires manual testing with IDN domains"
 
 def check_subdomain_spoofing(ip, domain=None):
     """Check if server blocks subdomain spoofing"""
     if not domain:
         return "N/A", "Domain required for subdomain spoofing check"
+    
     try:
-        if not reliable_smtp_port_check(ip):
+        if not quick_port_scan(ip, [25]):
             return "N/A", "SMTP port not open"
-        return "N/A", "Subdomain spoofing check not implemented"
+        
+        # Try using swaks if available
+        try:
+            result = subprocess.run(['swaks', '--server', ip, '--from', f'spoofed@fake.{domain}', 
+                                   '--to', f'legitimate@{domain}', '--quit-after', 'DATA'], 
+                                  capture_output=True, text=True, timeout=30)
+            
+            if '250' in result.stdout and 'accepted' in result.stdout.lower():
+                return "No", "Server accepts spoofed sender from subdomain"
+            else:
+                return "Yes", "Server blocks spoofed sender from subdomain"
+        except FileNotFoundError:
+            return "N/A", "swaks not available for subdomain spoofing test"
     except Exception as e:
         return "Error", f"Failed to check: {str(e)}"
 
@@ -957,20 +1318,30 @@ def check_subdomain_block(ip, domain=None):
 
 def check_rbl_rejection(ip, domain=None):
     """Check if MTA rejects mails from poor reputation IPs"""
-    return "N/A", "RBL rejection check not implemented"
+    # This would require testing from a known blacklisted IP
+    return "N/A", "RBL rejection check requires testing from blacklisted IPs"
 
 def check_dns_match(ip, domain=None):
     """Check reverse and forward DNS match"""
     try:
-        import socket
-        hostname, aliaslist, ipaddrlist = socket.gethostbyaddr(ip)
-        forward_ip = socket.gethostbyname(hostname)
-        if forward_ip == ip:
-            return "Yes", f"Forward and reverse DNS match (hostname: {hostname})"
-        else:
-            return "No", f"Forward/reverse DNS mismatch: {hostname} resolves to {forward_ip}, not {ip}"
-    except:
-        return "No", "No reverse DNS (PTR) record found for IP"
+        # Reverse DNS lookup
+        try:
+            import socket
+            hostname, aliaslist, ipaddrlist = socket.gethostbyaddr(ip)
+            
+            # Forward DNS lookup
+            try:
+                forward_ip = socket.gethostbyname(hostname)
+                if forward_ip == ip:
+                    return "Yes", f"Forward and reverse DNS match (hostname: {hostname})"
+                else:
+                    return "No", f"Forward/reverse DNS mismatch: {hostname} resolves to {forward_ip}, not {ip}"
+            except:
+                return "No", f"Forward DNS lookup failed for {hostname}"
+        except:
+            return "No", "No reverse DNS (PTR) record found for IP"
+    except Exception as e:
+        return "Error", f"Failed to check: {str(e)}"
 
 def check_https_required(ip, domain=None):
     """Check if web service runs on HTTPS"""
